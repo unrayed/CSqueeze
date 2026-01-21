@@ -1,0 +1,177 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-white text-gray-900 antialiased dark:bg-gray-950 dark:text-gray-100;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2 dark:ring-offset-gray-900;
+  }
+
+  /* Fun selection color */
+  ::selection {
+    @apply bg-primary-200 dark:bg-primary-800;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 font-semibold transition-all duration-300;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900;
+    @apply disabled:cursor-not-allowed disabled:opacity-50;
+    @apply transform hover:scale-[1.02] active:scale-[0.98];
+  }
+
+  .btn-primary {
+    @apply btn bg-primary-600 text-white;
+    @apply shadow-md shadow-primary-600/20 hover:shadow-lg hover:shadow-primary-600/30 hover:bg-primary-700;
+  }
+
+  .btn-secondary {
+    @apply btn bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100;
+    @apply hover:bg-gray-200 dark:hover:bg-gray-700;
+    @apply border-2 border-gray-200 dark:border-gray-700;
+  }
+
+  .btn-ghost {
+    @apply btn text-gray-700 dark:text-gray-300;
+    @apply hover:bg-gray-100 dark:hover:bg-gray-800;
+  }
+
+  .btn-fun {
+    @apply btn bg-warm-400 text-gray-900 font-bold;
+    @apply shadow-lg shadow-warm-400/30 hover:shadow-xl hover:shadow-warm-400/40;
+    @apply hover:bg-warm-500;
+  }
+
+  .card {
+    @apply rounded-3xl bg-white p-6 shadow-lg shadow-gray-900/5 dark:bg-gray-900 dark:shadow-gray-950/50;
+    @apply border border-gray-200 dark:border-gray-800;
+    @apply ring-1 ring-gray-900/5 dark:ring-white/5;
+    @apply transition-all duration-300 hover:shadow-xl;
+  }
+
+  .card-playful {
+    @apply card;
+    @apply hover:-translate-y-1;
+  }
+
+  .input {
+    @apply w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 text-gray-900 transition-all duration-200;
+    @apply placeholder:text-gray-400;
+    @apply focus:border-primary-500 focus:outline-none focus:ring-4 focus:ring-primary-500/20;
+    @apply dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder:text-gray-500;
+    @apply dark:focus:border-primary-500;
+  }
+
+  .label {
+    @apply mb-2 block text-sm font-semibold text-gray-700 dark:text-gray-300;
+  }
+
+  .gradient-text {
+    @apply text-primary-600 dark:text-primary-400;
+  }
+
+  .section-padding {
+    @apply px-4 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-32;
+  }
+
+  /* Fun blob shapes */
+  .blob {
+    border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+  }
+
+  /* Squircle shape */
+  .squircle {
+    border-radius: 22% 78% 22% 78% / 78% 22% 78% 22%;
+  }
+
+  /* Badge styles */
+  .badge {
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium;
+  }
+
+  .badge-primary {
+    @apply badge bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-300;
+  }
+
+  .badge-warm {
+    @apply badge bg-warm-100 text-warm-700 dark:bg-warm-900/50 dark:text-warm-300;
+  }
+}
+
+@layer utilities {
+  .animate-in {
+    animation: animateIn 0.6s ease-out forwards;
+  }
+
+  @keyframes animateIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Text balance for headings */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Clean backgrounds */
+  .bg-gradient-playful {
+    @apply bg-gray-50 dark:bg-gray-900;
+  }
+
+  .bg-gradient-warm {
+    @apply bg-white dark:bg-gray-950;
+  }
+}
+
+/* Custom scrollbar - more playful */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-gray-900;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-primary-300 dark:bg-primary-700;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-primary-400 dark:bg-primary-600;
+}
+
+/* Emoji animation */
+.emoji-wave {
+  animation: wave 2.5s infinite;
+  transform-origin: 70% 70%;
+  display: inline-block;
+}
+
+@keyframes wave {
+  0% { transform: rotate(0deg); }
+  10% { transform: rotate(14deg); }
+  20% { transform: rotate(-8deg); }
+  30% { transform: rotate(14deg); }
+  40% { transform: rotate(-4deg); }
+  50% { transform: rotate(10deg); }
+  60% { transform: rotate(0deg); }
+  100% { transform: rotate(0deg); }
+}
