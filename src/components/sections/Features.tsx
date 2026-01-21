@@ -6,8 +6,8 @@ const features = [
     icon: Shield,
     title: 'Your Privacy Matters',
     description: 'Your videos never leave your device. Everything happens right in your browser — we literally can\'t see your files!',
-    color: 'bg-emerald-500',
-    bgColor: 'bg-emerald-50 dark:bg-emerald-950/30',
+    color: 'bg-primary-500',
+    bgColor: 'bg-primary-50 dark:bg-primary-950/30',
     emoji: '🔒',
   },
   {

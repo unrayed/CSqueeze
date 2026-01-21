@@ -8,9 +8,9 @@ export function Footer() {
           {/* Brand */}
           <div className="md:col-span-2">
             <a href="#" className="flex items-center gap-2">
-              <img src="/CSqueeze.png" alt="CSqueeze" className="h-10 w-10" />
+              <img src="/CSqueeze.png" alt="ClipSqueeze" className="h-10 w-10" />
               <span className="text-xl font-extrabold">
-                CS<span className="text-primary-600 dark:text-primary-400">queeze</span>
+                Clip<span className="text-primary-600 dark:text-primary-400">Squeeze</span>
               </span>
             </a>
             <p className="mt-4 max-w-md text-gray-600 dark:text-gray-400">

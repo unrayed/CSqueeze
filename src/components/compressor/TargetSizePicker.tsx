@@ -143,7 +143,7 @@ function getQualityHint(
       label: 'Excellent quality',
       description: 'Minimal compression artifacts',
       emoji: '🌟',
-      bgColor: 'bg-emerald-100 dark:bg-emerald-900/50',
+      bgColor: 'bg-primary-100 dark:bg-primary-900/50',
     };
   }
   if (bitrate >= good) {
@@ -151,7 +151,7 @@ function getQualityHint(
       label: 'Good quality',
       description: 'Slight compression, looks great',
       emoji: '😊',
-      bgColor: 'bg-green-100 dark:bg-green-900/50',
+      bgColor: 'bg-primary-200 dark:bg-primary-900/40',
     };
   }
   if (bitrate >= acceptable) {

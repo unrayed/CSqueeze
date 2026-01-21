@@ -30,17 +30,17 @@ export function ResultPanel({ result, filename, onReset }: ResultPanelProps) {
   };
 
   return (
-    <div className="rounded-3xl border-2 border-emerald-200 bg-emerald-50 p-6 dark:border-emerald-800 dark:bg-emerald-900/20">
+    <div className="rounded-3xl border-2 border-primary-200 bg-primary-50 p-6 dark:border-primary-800 dark:bg-primary-900/20">
       {/* Success header */}
       <div className="flex items-center gap-4">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 text-3xl dark:bg-emerald-900/50">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-100 text-3xl dark:bg-primary-900/50">
           🎉
         </div>
         <div>
-          <h3 className="text-xl font-bold text-emerald-800 dark:text-emerald-200">
+          <h3 className="text-xl font-bold text-primary-800 dark:text-primary-200">
             Squeezed successfully!
           </h3>
-          <p className="text-emerald-700 dark:text-emerald-300">
+          <p className="text-primary-700 dark:text-primary-300">
             Your video is ready to download
           </p>
         </div>
@@ -77,14 +77,14 @@ export function ResultPanel({ result, filename, onReset }: ResultPanelProps) {
           <span className="text-gray-500">
             {formatBytes(result.originalSize)} → {formatBytes(result.outputSize)}
           </span>
-          <span className="font-bold text-emerald-600 dark:text-emerald-400">
+          <span className="font-bold text-primary-600 dark:text-primary-400">
             {formatPercentage(reduction)} smaller! ✨
           </span>
         </div>
         <div className="relative h-4 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
           <div className="absolute inset-0 flex">
             <div
-              className="h-full bg-emerald-500 transition-all"
+              className="h-full bg-primary-500 transition-all"
               style={{ width: `${Math.min(100, (result.outputSize / result.originalSize) * 100)}%` }}
             />
           </div>
@@ -145,7 +145,7 @@ function StatCard({ label, value, emoji, highlight }: StatCardProps) {
       <p
         className={`mt-1 text-xl font-bold ${
           highlight
-            ? 'text-emerald-600 dark:text-emerald-400'
+            ? 'text-primary-600 dark:text-primary-400'
             : 'text-gray-900 dark:text-gray-100'
         }`}
       >

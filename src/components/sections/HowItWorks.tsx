@@ -123,7 +123,7 @@ export function HowItWorks() {
           className="mt-12 text-center"
         >
           <a href="#compressor" className="btn-primary px-8 py-4 text-lg">
-            Try It Now — Free Forever! 🚀
+            Try It Now Free Forever! 🚀
           </a>
         </motion.div>
       </div>

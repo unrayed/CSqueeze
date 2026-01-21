@@ -22,11 +22,11 @@ export function Header() {
         <a href="#" className="group flex items-center gap-2">
           <img
             src="/CSqueeze.png"
-            alt="CSqueeze"
+            alt="ClipSqueeze"
             className="h-10 w-10 transition-transform group-hover:scale-105"
           />
           <span className="text-xl font-extrabold">
-            CS<span className="text-primary-600 dark:text-primary-400">queeze</span>
+            Clip<span className="text-primary-600 dark:text-primary-400">Squeeze</span>
           </span>
         </a>
 

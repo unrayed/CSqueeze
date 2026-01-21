@@ -53,7 +53,7 @@ export function Hero() {
             className="mt-8 flex flex-wrap justify-center gap-3"
           >
             {[
-              { icon: Lock, label: 'Private & Secure', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300' },
+              { icon: Lock, label: 'Private & Secure', color: 'bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-300' },
               { icon: Zap, label: 'Lightning Fast', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300' },
               { icon: PartyPopper, label: 'Totally Free', color: 'bg-pink-100 text-pink-700 dark:bg-pink-900/50 dark:text-pink-300' },
             ].map(({ icon: Icon, label, color }) => (
@@ -113,7 +113,7 @@ export function Hero() {
               <div className="flex gap-1.5">
                 <div className="h-3 w-3 rounded-full bg-red-400" />
                 <div className="h-3 w-3 rounded-full bg-yellow-400" />
-                <div className="h-3 w-3 rounded-full bg-green-400" />
+                <div className="h-3 w-3 rounded-full bg-primary-400" />
               </div>
               <div className="ml-4 flex-1 rounded-lg bg-white px-4 py-1.5 text-sm text-gray-500 dark:bg-gray-900 dark:text-gray-400">
                 clipsqueeze.app

@@ -56,8 +56,8 @@ function StatusCell({ value }: { value: boolean | string }) {
   if (value === true) {
     return (
       <div className="flex items-center justify-center">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/50">
-          <Check className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/50">
+          <Check className="h-5 w-5 text-primary-600 dark:text-primary-400" />
         </div>
       </div>
     );
