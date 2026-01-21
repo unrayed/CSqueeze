@@ -116,7 +116,7 @@ export function Hero() {
                 <div className="h-3 w-3 rounded-full bg-primary-400" />
               </div>
               <div className="ml-4 flex-1 rounded-lg bg-white px-4 py-1.5 text-sm text-gray-500 dark:bg-gray-900 dark:text-gray-400">
-                clipsqueeze.app
+                csqueeze.unray.dpdns.org
               </div>
             </div>
             {/* Content preview */}
