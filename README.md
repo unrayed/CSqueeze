@@ -4,7 +4,7 @@
 
 ClipSqueeze is a privacy-first, open source video compression tool that runs completely on your device. No uploads, no accounts, no watermarks — just fast, accurate compression to the size you need.
 
-Live website: `csqueeze.unray.dpdns.org`
+Live website: https://csqueeze.unray.dpdns.org
 
 ## Highlights
 
