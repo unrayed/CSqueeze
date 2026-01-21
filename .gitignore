@@ -29,6 +29,5 @@ dist-ssr
 .env.*.local
 
 /context
-readme.md
 .github
 .github/workflows
