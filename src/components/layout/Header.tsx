@@ -20,11 +20,13 @@ export function Header() {
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <a href="#" className="group flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-600 text-xl transition-transform group-hover:scale-105">
-            🍋
-          </div>
+          <img
+            src="/CSqueeze.png"
+            alt="CSqueeze"
+            className="h-10 w-10 transition-transform group-hover:scale-105"
+          />
           <span className="text-xl font-extrabold">
-            Clip<span className="text-primary-600 dark:text-primary-400">Squeeze</span>
+            CS<span className="text-primary-600 dark:text-primary-400">queeze</span>
           </span>
         </a>
 

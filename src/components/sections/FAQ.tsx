@@ -112,21 +112,6 @@ export function FAQ() {
           </Accordion.Root>
         </motion.div>
 
-        {/* Still have questions */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.5 }}
-          className="mt-12 text-center"
-        >
-          <p className="text-gray-600 dark:text-gray-400">
-            Still have questions?{' '}
-            <a href="#" className="font-semibold text-primary-600 hover:underline dark:text-primary-400">
-              Let us know!
-            </a>
-          </p>
-        </motion.div>
       </div>
     </section>
   );

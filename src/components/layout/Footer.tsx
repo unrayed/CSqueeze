@@ -1,4 +1,4 @@
-import { Heart, Github, Twitter } from 'lucide-react';
+import { Heart, Github } from 'lucide-react';
 
 export function Footer() {
   return (
@@ -8,11 +8,9 @@ export function Footer() {
           {/* Brand */}
           <div className="md:col-span-2">
             <a href="#" className="flex items-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-600 text-xl">
-                🍋
-              </div>
+              <img src="/CSqueeze.png" alt="CSqueeze" className="h-10 w-10" />
               <span className="text-xl font-extrabold">
-                Clip<span className="text-primary-600 dark:text-primary-400">Squeeze</span>
+                CS<span className="text-primary-600 dark:text-primary-400">queeze</span>
               </span>
             </a>
             <p className="mt-4 max-w-md text-gray-600 dark:text-gray-400">
@@ -21,20 +19,12 @@ export function Footer() {
             </p>
             <div className="mt-6 flex gap-4">
               <a
-                href="https://github.com"
+                href="https://github.com/unrayed/CSqueeze"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-200 text-gray-600 transition-colors hover:bg-gray-300 hover:text-gray-900 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100"
               >
                 <Github className="h-5 w-5" />
-              </a>
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-200 text-gray-600 transition-colors hover:bg-gray-300 hover:text-gray-900 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100"
-              >
-                <Twitter className="h-5 w-5" />
               </a>
             </div>
           </div>
@@ -100,7 +90,7 @@ export function Footer() {
             Made with <Heart className="h-4 w-4 text-red-500" /> for fast, private compression
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-500">
-            © {new Date().getFullYear()} ClipSqueeze. Free forever! 🎉
+            © {new Date().getFullYear()} CSqueeze. Free forever! 🎉
           </p>
         </div>
       </div>

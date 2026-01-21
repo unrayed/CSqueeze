@@ -15,8 +15,7 @@ export interface VideoMetadata {
 export interface CompressionSettings {
   targetSizeBytes: number;
   audioBitrate: number; // bits per second (e.g., 96000 or 128000)
-  allowDownscale: boolean;
-  allowFpsReduction: boolean;
+  targetResolution: number | null; // null = keep original, otherwise target height (720, 480, etc.)
   muteAudio: boolean;
 }
 
@@ -110,10 +109,4 @@ export interface SizePreset {
 export interface ResolutionStep {
   name: string;
   maxHeight: number;
-}
-
-// FPS steps for reduction
-export interface FpsStep {
-  value: number;
-  label: string;
 }

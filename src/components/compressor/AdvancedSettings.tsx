@@ -3,31 +3,35 @@ import * as Switch from '@radix-ui/react-switch';
 import * as Select from '@radix-ui/react-select';
 import { ChevronDown, Check, Settings2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { AUDIO_BITRATES } from '../../lib/constants';
+import { AUDIO_BITRATES, RESOLUTION_OPTIONS } from '../../lib/constants';
+import type { VideoMetadata } from '../../types';
 
 interface AdvancedSettingsProps {
   audioBitrate: number;
   onAudioBitrateChange: (value: number) => void;
-  allowDownscale: boolean;
-  onAllowDownscaleChange: (value: boolean) => void;
-  allowFpsReduction: boolean;
-  onAllowFpsReductionChange: (value: boolean) => void;
+  targetResolution: number | null;
+  onTargetResolutionChange: (value: number | null) => void;
   muteAudio: boolean;
   onMuteAudioChange: (value: boolean) => void;
   hasAudio: boolean;
+  metadata: VideoMetadata;
 }
 
 export function AdvancedSettings({
   audioBitrate,
   onAudioBitrateChange,
-  allowDownscale,
-  onAllowDownscaleChange,
-  allowFpsReduction,
-  onAllowFpsReductionChange,
+  targetResolution,
+  onTargetResolutionChange,
   muteAudio,
   onMuteAudioChange,
   hasAudio,
+  metadata,
 }: AdvancedSettingsProps) {
+  // Filter resolution options to only show those smaller than or equal to original
+  const availableResolutions = RESOLUTION_OPTIONS.filter(
+    (r) => r.maxHeight === 0 || r.maxHeight <= metadata.height
+  );
+
   return (
     <Accordion.Root type="single" collapsible>
       <Accordion.Item value="advanced" className="overflow-hidden rounded-2xl border-2 border-gray-200 dark:border-gray-700">
@@ -36,13 +40,61 @@ export function AdvancedSettings({
             <div className="flex items-center gap-3">
               <Settings2 className="h-5 w-5 text-gray-400" />
               <span className="font-semibold">Advanced Settings</span>
-              <span className="text-sm text-gray-400">Optional tweaks</span>
+              <span className="text-sm text-gray-400">Resolution, Audio</span>
             </div>
             <ChevronDown className="h-5 w-5 text-gray-400 transition-transform duration-300 group-data-[state=open]:rotate-180" />
           </Accordion.Trigger>
         </Accordion.Header>
         <Accordion.Content className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
           <div className="space-y-5 border-t border-gray-200 px-5 py-5 dark:border-gray-700">
+            
+            {/* Resolution Picker */}
+            <div>
+              <label className="label flex items-center gap-2">
+                <span>📐</span> Output Resolution
+              </label>
+              <Select.Root
+                value={String(targetResolution ?? 0)}
+                onValueChange={(v) => onTargetResolutionChange(v === '0' ? null : Number(v))}
+              >
+                <Select.Trigger className="input flex items-center justify-between">
+                  <Select.Value placeholder="Original" />
+                  <Select.Icon>
+                    <ChevronDown className="h-4 w-4 text-gray-400" />
+                  </Select.Icon>
+                </Select.Trigger>
+                <Select.Portal>
+                  <Select.Content className="z-50 rounded-xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800">
+                    <Select.Viewport className="p-2">
+                      {availableResolutions.map((option) => (
+                        <Select.Item
+                          key={option.maxHeight}
+                          value={String(option.maxHeight)}
+                          className={cn(
+                            'flex cursor-pointer items-center justify-between rounded-lg px-3 py-2.5 text-sm outline-none',
+                            'hover:bg-gray-100 dark:hover:bg-gray-700',
+                            'data-[highlighted]:bg-gray-100 dark:data-[highlighted]:bg-gray-700'
+                          )}
+                        >
+                          <Select.ItemText>
+                            {option.maxHeight === 0 
+                              ? `Original (${metadata.height}p)` 
+                              : option.name}
+                          </Select.ItemText>
+                          <Select.ItemIndicator>
+                            <Check className="h-4 w-4 text-primary-500" />
+                          </Select.ItemIndicator>
+                        </Select.Item>
+                      ))}
+                    </Select.Viewport>
+                  </Select.Content>
+                </Select.Portal>
+              </Select.Root>
+              <p className="mt-1.5 text-xs text-gray-500">
+                Lower resolution = smaller file & faster encoding
+              </p>
+            </div>
+
             {/* Audio Bitrate */}
             {hasAudio && !muteAudio && (
               <div>
@@ -98,28 +150,10 @@ export function AdvancedSettings({
               />
             )}
 
-            {/* Allow Downscale Toggle */}
-            <SettingToggle
-              emoji="📐"
-              label="Allow downscale (last resort)"
-              description="Reduce resolution if bitrate is too low"
-              checked={allowDownscale}
-              onCheckedChange={onAllowDownscaleChange}
-            />
-
-            {/* Allow FPS Reduction Toggle */}
-            <SettingToggle
-              emoji="🎞️"
-              label="Allow FPS reduction (last resort)"
-              description="Lower frame rate to hit target size"
-              checked={allowFpsReduction}
-              onCheckedChange={onAllowFpsReductionChange}
-            />
-
             {/* Helper text */}
             <p className="rounded-xl bg-gray-100 p-3 text-sm text-gray-500 dark:bg-gray-800 dark:text-gray-400">
-              💡 <strong>Tip:</strong> These options are only used when the target size is very aggressive. 
-              A 720p video at good quality often looks better than 1080p at potato quality!
+              💡 <strong>Tip:</strong> Reducing resolution often has more impact on file size than lowering bitrate. 
+              A 720p video at good quality often looks better than 1080p at low bitrate!
             </p>
           </div>
         </Accordion.Content>

@@ -1,4 +1,4 @@
-import type { SizePreset, ResolutionStep, FpsStep } from '../types';
+import type { SizePreset, ResolutionStep } from '../types';
 
 /**
  * Target size presets available to the user
@@ -20,9 +20,10 @@ export const AUDIO_BITRATES = [
 ];
 
 /**
- * Resolution steps for downscaling (from highest to lowest)
+ * Resolution options for user selection
  */
-export const RESOLUTION_STEPS: ResolutionStep[] = [
+export const RESOLUTION_OPTIONS: ResolutionStep[] = [
+  { name: 'Original', maxHeight: 0 }, // 0 means keep original
   { name: '1080p', maxHeight: 1080 },
   { name: '720p', maxHeight: 720 },
   { name: '480p', maxHeight: 480 },
@@ -30,13 +31,13 @@ export const RESOLUTION_STEPS: ResolutionStep[] = [
 ];
 
 /**
- * FPS steps for reduction (from highest to lowest)
+ * Resolution steps for fallback downscaling (from highest to lowest)
  */
-export const FPS_STEPS: FpsStep[] = [
-  { value: 30, label: '30 fps' },
-  { value: 24, label: '24 fps (cinematic)' },
-  { value: 20, label: '20 fps' },
-  { value: 15, label: '15 fps (minimum)' },
+export const RESOLUTION_STEPS: ResolutionStep[] = [
+  { name: '1080p', maxHeight: 1080 },
+  { name: '720p', maxHeight: 720 },
+  { name: '480p', maxHeight: 480 },
+  { name: '360p', maxHeight: 360 },
 ];
 
 /**

@@ -1,4 +1,4 @@
-import { ENCODING, RESOLUTION_STEPS, FPS_STEPS } from './constants';
+import { ENCODING, RESOLUTION_STEPS } from './constants';
 import type { CompressionSettings, EncodingParams, VideoMetadata } from '../types';
 
 /**
@@ -9,7 +9,17 @@ export function calculateEncodingParams(
   settings: CompressionSettings
 ): EncodingParams {
   const { duration, width, height, fps } = metadata;
-  const { targetSizeBytes, audioBitrate, muteAudio } = settings;
+  const { targetSizeBytes, audioBitrate, muteAudio, targetResolution } = settings;
+
+  // Calculate output dimensions
+  let outputWidth = width;
+  let outputHeight = height;
+  
+  if (targetResolution && targetResolution > 0 && targetResolution < height) {
+    const scaled = calculateScaledDimensions(width, height, targetResolution);
+    outputWidth = scaled.width;
+    outputHeight = scaled.height;
+  }
 
   // Calculate total available bitrate
   const targetBits = targetSizeBytes * 8;
@@ -24,8 +34,8 @@ export function calculateEncodingParams(
   return {
     videoBitrate: Math.max(videoBps, ENCODING.MIN_VIDEO_BITRATE),
     audioBitrate: effectiveAudioBps,
-    width,
-    height,
+    width: outputWidth,
+    height: outputHeight,
     fps,
     muteAudio,
   };
@@ -93,19 +103,6 @@ export function getNextResolutionStep(
     width: 0, // Will be calculated to maintain aspect ratio
     height: nextStep.maxHeight,
   };
-}
-
-/**
- * Get the next FPS reduction step
- */
-export function getNextFpsStep(currentFps: number): number | null {
-  // Find the first FPS step that's lower than current
-  for (const step of FPS_STEPS) {
-    if (step.value < currentFps) {
-      return step.value;
-    }
-  }
-  return null; // Already at minimum FPS
 }
 
 /**

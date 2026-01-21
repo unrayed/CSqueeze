@@ -19,8 +19,7 @@ export function CompressorTool() {
   // Settings state - default to 10MB (Discord limit)
   const [targetSizeBytes, setTargetSizeBytes] = useState(SIZE_PRESETS[0]?.bytes ?? 10 * 1024 * 1024);
   const [audioBitrate, setAudioBitrate] = useState(96000);
-  const [allowDownscale, setAllowDownscale] = useState(false);
-  const [allowFpsReduction, setAllowFpsReduction] = useState(false);
+  const [targetResolution, setTargetResolution] = useState<number | null>(null);
   const [muteAudio, setMuteAudio] = useState(false);
 
   // Compression state
@@ -48,13 +47,12 @@ export function CompressorTool() {
     const settings: CompressionSettings = {
       targetSizeBytes,
       audioBitrate,
-      allowDownscale,
-      allowFpsReduction,
+      targetResolution,
       muteAudio,
     };
 
     startCompression(file, settings);
-  }, [file, targetSizeBytes, audioBitrate, allowDownscale, allowFpsReduction, muteAudio, startCompression]);
+  }, [file, targetSizeBytes, audioBitrate, targetResolution, muteAudio, startCompression]);
 
   // Handle reset
   const handleReset = useCallback(() => {
@@ -186,13 +184,12 @@ export function CompressorTool() {
               <AdvancedSettings
                 audioBitrate={audioBitrate}
                 onAudioBitrateChange={setAudioBitrate}
-                allowDownscale={allowDownscale}
-                onAllowDownscaleChange={setAllowDownscale}
-                allowFpsReduction={allowFpsReduction}
-                onAllowFpsReductionChange={setAllowFpsReduction}
+                targetResolution={targetResolution}
+                onTargetResolutionChange={setTargetResolution}
                 muteAudio={muteAudio}
                 onMuteAudioChange={setMuteAudio}
                 hasAudio={metadata.hasAudio}
+                metadata={metadata}
               />
 
               {/* Compress Button */}

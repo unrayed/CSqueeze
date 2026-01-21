@@ -44,9 +44,6 @@ import type {
 import {
   calculateEncodingParams,
   calculateRetryBitrate,
-  calculateScaledDimensions,
-  getNextResolutionStep,
-  getNextFpsStep,
   isBitrateTooLowForResolution,
 } from '../lib/bitrate';
 import { ENCODING } from '../lib/constants';
@@ -168,52 +165,21 @@ async function compressVideo(
         return;
       }
 
-      // Result too large - need to retry
+      // Result too large - need to retry with lower bitrate
       const newBitrate = calculateRetryBitrate(
         params.videoBitrate,
         result.size,
         settings.targetSizeBytes
       );
 
-      // Check if bitrate is too low for current resolution
+      // Check if bitrate is getting too low for current resolution
       if (isBitrateTooLowForResolution(newBitrate, params.height)) {
-        // Try downscaling if allowed
-        if (settings.allowDownscale) {
-          const nextRes = getNextResolutionStep(params.height);
-          if (nextRes) {
-            const scaled = calculateScaledDimensions(
-              metadata.width,
-              metadata.height,
-              nextRes.height
-            );
-            params = {
-              ...params,
-              width: scaled.width,
-              height: scaled.height,
-              videoBitrate: calculateEncodingParams(
-                { ...metadata, width: scaled.width, height: scaled.height },
-                settings
-              ).videoBitrate,
-            };
-            currentAttempt++;
-            continue;
-          }
+        // Cannot achieve target at this resolution
+        let suggestion = `Target size is too small for this video at ${params.height}p.`;
+        if (!settings.targetResolution) {
+          suggestion += ' Try reducing the resolution in Advanced Settings.';
         }
-
-        // Try FPS reduction if allowed
-        if (settings.allowFpsReduction) {
-          const nextFps = getNextFpsStep(params.fps);
-          if (nextFps) {
-            params = { ...params, fps: nextFps, videoBitrate: newBitrate };
-            currentAttempt++;
-            continue;
-          }
-        }
-
-        // Cannot continue - target too small
-        throw new Error(
-          `Target size is too small for this video. The minimum achievable size at ${params.height}p is approximately ${formatBytes(result.size)}.`
-        );
+        throw new Error(suggestion);
       }
 
       params = { ...params, videoBitrate: newBitrate };
@@ -252,11 +218,8 @@ async function compressVideo(
     } else {
       // Cannot achieve target
       let suggestion = 'Try increasing your target size';
-      if (!settings.allowDownscale) {
-        suggestion += ', or enable "Allow downscale" to reduce resolution';
-      }
-      if (!settings.allowFpsReduction) {
-        suggestion += ', or enable "Allow FPS reduction"';
+      if (!settings.targetResolution) {
+        suggestion += ', or reduce resolution in Advanced Settings';
       }
       if (!settings.muteAudio && metadata.hasAudio) {
         suggestion += ', or mute audio to save space';
@@ -403,6 +366,10 @@ async function encodeVideo(
 
   videoEncoder.configure(encoderConfig);
 
+  // Track output frame count for proper timestamp generation
+  let encodedFrameCount = 0;
+  const outputFrameDuration = 1_000_000 / fps; // microseconds per frame
+  
   // Create video decoder
   const videoDecoder = new VideoDecoder({
     output: (frame) => {
@@ -418,26 +385,34 @@ async function encodeVideo(
         // Scale frame if needed
         needsScaling = frame.displayWidth !== width || frame.displayHeight !== height;
         
+        // Calculate new timestamp based on output frame count (for FPS conversion)
+        const newTimestamp = Math.round(encodedFrameCount * outputFrameDuration);
+        const newDuration = Math.round(outputFrameDuration);
+        
         if (needsScaling) {
           // Use synchronous scaling with canvas
           const canvas = new OffscreenCanvas(width, height);
           const ctx = canvas.getContext('2d');
           if (ctx) {
             ctx.drawImage(frame, 0, 0, width, height);
-            const frameInit: VideoFrameInit = { timestamp: frame.timestamp };
-            if (frame.duration !== null) {
-              frameInit.duration = frame.duration;
-            }
-            outputFrame = new VideoFrame(canvas, frameInit);
+            outputFrame = new VideoFrame(canvas, { 
+              timestamp: newTimestamp,
+              duration: newDuration,
+            });
           }
         } else {
-          outputFrame = frame;
+          // Clone frame with new timestamp for FPS conversion
+          outputFrame = new VideoFrame(frame, {
+            timestamp: newTimestamp,
+            duration: newDuration,
+          });
         }
 
         if (outputFrame) {
-          // Encode frame
-          const keyFrame = processedFrames % Math.round(fps * ENCODING.KEYFRAME_INTERVAL) === 0;
+          // Encode frame - force keyframe at regular intervals
+          const keyFrame = encodedFrameCount % Math.round(fps * ENCODING.KEYFRAME_INTERVAL) === 0;
           videoEncoder.encode(outputFrame, { keyFrame });
+          encodedFrameCount++;
         }
 
         processedFrames++;
@@ -446,7 +421,7 @@ async function encodeVideo(
         console.error('Error processing frame:', e);
       } finally {
         // Always close frames to prevent memory leaks
-        if (needsScaling && outputFrame) {
+        if (outputFrame && outputFrame !== frame) {
           outputFrame.close();
         }
         frame.close();

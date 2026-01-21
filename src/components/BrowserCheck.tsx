@@ -2,10 +2,14 @@ import { useState, useEffect } from 'react';
 import { AlertTriangle, X, Chrome } from 'lucide-react';
 import { isWebCodecsSupported, isChromiumBased } from '../lib/utils';
 
+function isSecureContext(): boolean {
+  return window.isSecureContext ?? (window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+}
+
 export function BrowserCheck() {
   const [dismissed, setDismissed] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
-  const [warningType, setWarningType] = useState<'unsupported' | 'limited' | null>(null);
+  const [warningType, setWarningType] = useState<'unsupported' | 'limited' | 'insecure' | null>(null);
 
   useEffect(() => {
     // Check if already dismissed in this session
@@ -15,7 +19,11 @@ export function BrowserCheck() {
       return;
     }
 
-    if (!isWebCodecsSupported()) {
+    // Check for secure context first - WebCodecs requires HTTPS
+    if (!isSecureContext()) {
+      setWarningType('insecure');
+      setShowWarning(true);
+    } else if (!isWebCodecsSupported()) {
       setWarningType('unsupported');
       setShowWarning(true);
     } else if (!isChromiumBased()) {
@@ -38,7 +46,16 @@ export function BrowserCheck() {
           <div className="flex items-center gap-3">
             <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
             <div>
-              {warningType === 'unsupported' ? (
+              {warningType === 'insecure' ? (
+                <>
+                  <p className="font-medium text-yellow-800 dark:text-yellow-200">
+                    HTTPS required 🔒
+                  </p>
+                  <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                    Video compression requires a secure connection (HTTPS). Please access this site via HTTPS or localhost.
+                  </p>
+                </>
+              ) : warningType === 'unsupported' ? (
                 <>
                   <p className="font-medium text-yellow-800 dark:text-yellow-200">
                     Browser not supported

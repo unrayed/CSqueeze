@@ -5,7 +5,6 @@ import {
   calculateScaledDimensions,
   isBitrateTooLowForResolution,
   getNextResolutionStep,
-  getNextFpsStep,
   estimateOutputSize,
 } from './bitrate';
 import type { VideoMetadata, CompressionSettings } from '../types';
@@ -26,8 +25,7 @@ describe('calculateEncodingParams', () => {
   const baseSettings: CompressionSettings = {
     targetSizeBytes: 10 * 1024 * 1024, // 10 MB
     audioBitrate: 96000,
-    allowDownscale: false,
-    allowFpsReduction: false,
+    targetResolution: null,
     muteAudio: false,
   };
 
@@ -139,23 +137,6 @@ describe('getNextResolutionStep', () => {
 
   it('returns null at minimum resolution', () => {
     const next = getNextResolutionStep(360);
-    expect(next).toBeNull();
-  });
-});
-
-describe('getNextFpsStep', () => {
-  it('returns 24 as next step from 30 fps', () => {
-    const next = getNextFpsStep(30);
-    expect(next).toBe(24);
-  });
-
-  it('returns 20 as next step from 24 fps', () => {
-    const next = getNextFpsStep(24);
-    expect(next).toBe(20);
-  });
-
-  it('returns null at minimum fps', () => {
-    const next = getNextFpsStep(15);
     expect(next).toBeNull();
   });
 });
