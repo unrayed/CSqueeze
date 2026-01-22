@@ -125,7 +125,7 @@ export function AdvancedSettings({
                             )}
                           >
                             <Select.ItemText>
-                              {option.label} — {option.description}
+                              {option.label} - {option.description}
                             </Select.ItemText>
                             <Select.ItemIndicator>
                               <Check className="h-4 w-4 text-primary-500" />

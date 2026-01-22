@@ -11,9 +11,9 @@ interface VideoInfoProps {
 
 export function VideoInfo({ metadata, thumbnail, onRemove, disabled }: VideoInfoProps) {
   return (
-    <div className="flex gap-4 rounded-2xl bg-gray-50 p-4 dark:bg-gray-800/50">
+    <div className="flex flex-col gap-4 rounded-2xl bg-gray-50 p-4 dark:bg-gray-800/50 sm:flex-row">
       {/* Thumbnail */}
-      <div className="relative h-28 w-44 flex-shrink-0 overflow-hidden rounded-xl bg-gray-200 dark:bg-gray-700">
+      <div className="relative h-40 w-full flex-shrink-0 overflow-hidden rounded-xl bg-gray-200 dark:bg-gray-700 sm:h-28 sm:w-44">
         {thumbnail ? (
           <img
             src={thumbnail}
@@ -48,7 +48,7 @@ export function VideoInfo({ metadata, thumbnail, onRemove, disabled }: VideoInfo
         </div>
 
         {/* Metadata grid */}
-        <div className="mt-3 grid grid-cols-2 gap-3">
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <MetadataItem icon="📦" label="Size" value={formatBytes(metadata.fileSize)} />
           <MetadataItem icon="📐" label="Resolution" value={`${metadata.width}×${metadata.height}`} />
           <MetadataItem icon="🎞️" label="FPS" value={`${Math.round(metadata.fps)} fps`} />

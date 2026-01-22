@@ -7,42 +7,42 @@ const faqs = [
   {
     question: 'Do you upload my video to your servers? 🤔',
     answer:
-      'Nope, never! Your video stays 100% on your device. We use WebCodecs technology to process everything right in your browser. We literally cannot see your files — that\'s the whole point! 🔒',
+      'No. Everything runs in your browser with WebCodecs, so your files never leave your device. We do not see or store them.',
   },
   {
     question: 'Is this really free? What\'s the catch? 🎁',
     answer:
-      'It\'s genuinely free with no catch! No accounts, no subscriptions, no "premium" features locked away. We built this because we needed it ourselves and wanted to share it with everyone. Maybe we\'ll add optional tips someday, but the core tool will always be free.',
+      'It\'s free and there is no catch. No accounts, no subscriptions, no paywalls. If we add optional tips later, the core tool stays free.',
   },
   {
-    question: 'Why can\'t I get perfect quality at 8MB? 📉',
+    question: 'Why can\'t I get perfect quality at 10MB? 📉',
     answer:
-      'Video compression is a trade-off between size and quality. When you squeeze a 2-minute video into 8MB, there\'s only so much data to work with! Pro tip: enable "Allow downscale" — a 720p video at good bitrate often looks better than 1080p at potato quality. 🥔',
+      'Compression is a tradeoff between size and quality. For a 2-minute clip, 10MB is tight. Try a lower resolution from the list, like 720p or 480p, and a higher quality setting. That usually looks better than squeezing 1080p too hard.',
   },
   {
     question: 'Why does it retry multiple times? 🔄',
     answer:
-      'Great question! Video encoding isn\'t perfectly predictable — the output size depends on your video\'s content. So we start with our best estimate, check the result, and if it\'s too big, we automatically lower the quality and try again. This ensures you ALWAYS get a file under your target size. Smart, right? 🧠',
+      'Encoding is not perfectly predictable. The final size depends on motion and detail, so we start with an estimate, check the result, then lower the bitrate and retry until it fits your target.',
   },
   {
     question: 'Which browsers work best? 🌐',
     answer:
-      'We recommend Chrome, Edge, or Brave — basically any Chromium-based browser. These have the best support for WebCodecs, the tech that makes this magic possible. Firefox and Safari are catching up but might not work fully yet.',
+      'Chrome, Edge, and Brave work best. Firefox and Safari are improving but can be limited depending on WebCodecs support.',
   },
   {
     question: 'What\'s the maximum file size I can compress? 📦',
     answer:
-      'We recommend videos under 500MB and 5 minutes for the smoothest experience. Bigger files will work, but they might be slow or cause your browser to complain about memory. If you\'re working with huge files, maybe grab a snack while it processes! 🍿',
+      'For the smoothest experience, keep videos under 500MB and under 5 minutes. Larger files can work but may be slow or memory heavy.',
   },
   {
     question: 'What happens to audio? 🔊',
     answer:
-      'If your video has AAC audio (most MP4s do), we keep it as-is. For other audio formats, the current version might mute the audio — we\'re working on improving this! You can also manually mute audio to squeeze out extra file size savings.',
+      'If your video has AAC audio, we keep it. Other formats might be muted for now. You can also mute audio to save a bit more size.',
   },
   {
     question: 'Can I use this for commercial projects? 💼',
     answer:
-      'Absolutely! Use it for whatever you want — personal, commercial, educational, memes, you name it. No attribution required, though we always appreciate a shoutout! 💚',
+      'Yes. Use it for personal, commercial, or anything else. No attribution required, but a shoutout is always appreciated.',
   },
 ];
 
@@ -74,7 +74,7 @@ export function FAQ() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
-            className="mx-auto mt-4 max-w-2xl text-lg text-gray-600 dark:text-gray-400"
+            className="mx-auto mt-4 max-w-2xl text-base text-gray-600 dark:text-gray-400 sm:text-lg"
           >
             We've got answers! Here's everything you need to know.
           </motion.p>

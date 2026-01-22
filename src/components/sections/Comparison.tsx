@@ -108,7 +108,7 @@ export function Comparison() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
-            className="mx-auto mt-4 max-w-2xl text-lg text-gray-600 dark:text-gray-400"
+            className="mx-auto mt-4 max-w-2xl text-base text-gray-600 dark:text-gray-400 sm:text-lg"
           >
             See how we stack up against the alternatives.
           </motion.p>
@@ -119,10 +119,10 @@ export function Comparison() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.3 }}
-          className="mt-12 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-900"
+          className="mt-10 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-900 sm:mt-12"
         >
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[640px] sm:min-w-0">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-800">
                   <th className="px-6 py-5 text-left text-sm font-semibold text-gray-600 dark:text-gray-400">
@@ -130,7 +130,7 @@ export function Comparison() {
                   </th>
                   <th className="bg-primary-50 px-6 py-5 text-center dark:bg-primary-900/20">
                     <div className="flex flex-col items-center gap-1">
-                      <span className="text-2xl">🎯</span>
+                      <img src="/CSqueeze.png" alt="ClipSqueeze" className="h-6 w-6" />
                       <span className="font-bold text-primary-700 dark:text-primary-300">ClipSqueeze</span>
                     </div>
                   </th>

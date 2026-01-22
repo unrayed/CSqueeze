@@ -74,7 +74,7 @@ export function HowItWorks() {
           </motion.p>
         </div>
 
-        <div className="relative mt-16">
+        <div className="relative mt-12 sm:mt-16">
           {/* Connection line - desktop */}
           <div className="absolute left-0 right-0 top-20 hidden h-1 bg-gray-200 dark:bg-gray-700 lg:block" />
 
@@ -89,14 +89,14 @@ export function HowItWorks() {
                 className="relative"
               >
                 {/* Step card */}
-                <div className={`rounded-3xl ${step.bgColor} p-6 text-center`}>
+                <div className={`rounded-3xl ${step.bgColor} p-5 text-center sm:p-6`}>
                   {/* Number badge */}
-                  <div className={`mx-auto -mt-12 mb-4 flex h-16 w-16 items-center justify-center rounded-2xl ${step.color} text-xl font-bold text-white shadow-md`}>
+                  <div className={`mx-auto -mt-10 mb-4 flex h-14 w-14 items-center justify-center rounded-2xl ${step.color} text-lg font-bold text-white shadow-md sm:-mt-12 sm:h-16 sm:w-16 sm:text-xl`}>
                     {step.emoji}
                   </div>
 
                   {/* Icon */}
-                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-md dark:bg-gray-800">
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-md dark:bg-gray-800 sm:h-14 sm:w-14">
                     <step.icon className="h-7 w-7 text-gray-700 dark:text-gray-300" />
                   </div>
 
@@ -122,7 +122,7 @@ export function HowItWorks() {
           transition={{ delay: 0.5 }}
           className="mt-12 text-center"
         >
-          <a href="#compressor" className="btn-primary px-8 py-4 text-lg">
+          <a href="#compressor" className="btn-primary w-full px-8 py-4 text-lg sm:w-auto">
             Try It Now Free Forever! 🚀
           </a>
         </motion.div>

@@ -5,7 +5,7 @@ export function Hero() {
   return (
     <section className="relative min-h-[90vh] overflow-hidden bg-white dark:bg-gray-950">
 
-      <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8 lg:py-36">
+      <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-28 lg:px-8 lg:py-36">
         <div className="text-center">
           {/* Fun badge */}
           <motion.div
@@ -16,7 +16,7 @@ export function Hero() {
           >
             <Sparkles className="h-4 w-4 text-primary-600 dark:text-primary-400" />
             <span className="text-sm font-semibold text-primary-700 dark:text-primary-300">
-              100% Free & Private — Your videos stay on your device!
+              100% Free & Private - Your videos stay on your device!
             </span>
             <span className="emoji-wave">👋</span>
           </motion.div>
@@ -39,7 +39,7 @@ export function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="mx-auto mt-6 max-w-2xl text-lg text-gray-600 dark:text-gray-400 sm:text-xl"
+            className="mx-auto mt-6 max-w-2xl text-base text-gray-600 dark:text-gray-400 sm:text-xl"
           >
             Need to fit that video into Discord's 10MB limit? Email attachment too big? 
             We've got you covered! <span className="font-semibold text-gray-900 dark:text-white">No uploads, no waiting, no nonsense.</span>
@@ -72,18 +72,18 @@ export function Hero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
-            className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center"
+            className="mt-10 flex flex-col items-stretch gap-4 sm:flex-row sm:justify-center"
           >
             <a
               href="#compressor"
-              className="btn-primary px-8 py-4 text-lg"
+              className="btn-primary w-full px-8 py-4 text-lg sm:w-auto"
             >
               <Sparkles className="h-5 w-5" />
-              Start Compressing — It's Free!
+              Start Compressing - It's Free!
             </a>
             <a
               href="#how-it-works"
-              className="btn-ghost text-lg"
+              className="btn-ghost w-full text-lg sm:w-auto"
             >
               See how it works →
             </a>
@@ -120,7 +120,7 @@ export function Hero() {
               </div>
             </div>
             {/* Content preview */}
-            <div className="rounded-b-2xl bg-gray-50 p-8 dark:bg-gray-800">
+            <div className="rounded-b-2xl bg-gray-50 p-4 dark:bg-gray-800 sm:p-8">
               <div className="flex flex-col items-center justify-center gap-4 py-8 sm:flex-row sm:gap-8">
                 <div className="text-center">
                   <div className="text-5xl font-bold text-gray-400">47MB</div>
@@ -141,7 +141,7 @@ export function Hero() {
                 />
               </div>
               <p className="mt-4 text-center text-sm font-medium text-primary-600 dark:text-primary-400">
-                79% smaller — Ready for Discord! 🎮
+                79% smaller - Ready for Discord! 🎮
               </p>
             </div>
           </div>

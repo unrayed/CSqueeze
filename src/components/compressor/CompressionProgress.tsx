@@ -30,7 +30,7 @@ export function CompressionProgress({ progress, onCancel }: CompressionProgressP
   return (
     <div className="rounded-3xl border-2 border-primary-200 bg-primary-50 p-6 dark:border-primary-800 dark:bg-primary-900/20">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm dark:bg-gray-800">
             {stageEmoji}
@@ -74,7 +74,7 @@ export function CompressionProgress({ progress, onCancel }: CompressionProgressP
       </div>
 
       {/* Details */}
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <span className="text-lg font-bold text-primary-700 dark:text-primary-300">
           {Math.round(progress.progress)}%
         </span>

@@ -5,7 +5,7 @@ const features = [
   {
     icon: Shield,
     title: 'Your Privacy Matters',
-    description: 'Your videos never leave your device. Everything happens right in your browser — we literally can\'t see your files!',
+    description: 'Your videos never leave your device. Everything happens right in your browser - we literally can\'t see your files!',
     color: 'bg-primary-500',
     bgColor: 'bg-primary-50 dark:bg-primary-950/30',
     emoji: '🔒',
@@ -99,7 +99,7 @@ export function Features() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.2 }}
-            className="mx-auto mt-4 max-w-2xl text-lg text-gray-600 dark:text-gray-400"
+            className="mx-auto mt-4 max-w-2xl text-base text-gray-600 dark:text-gray-400 sm:text-lg"
           >
             We built the video compressor we wished existed. Fast, private, and actually easy to use.
           </motion.p>
@@ -110,7 +110,7 @@ export function Features() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: '-100px' }}
-          className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+          className="mt-12 grid gap-6 sm:mt-16 sm:grid-cols-2 lg:grid-cols-3"
         >
           {features.map((feature) => (
             <motion.div

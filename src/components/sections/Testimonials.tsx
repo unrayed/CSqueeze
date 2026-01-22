@@ -27,7 +27,7 @@ const testimonials = [
     name: 'Luna Dev',
     role: 'Software Engineer',
     avatar: '👩‍💻',
-    content: 'Love that it uses WebCodecs — real browser tech, not some sketchy upload. The retry mechanism is clever too!',
+    content: 'Love that it uses WebCodecs - real browser tech, not some sketchy upload. The retry mechanism is clever too!',
     rating: 5,
   },
   {
@@ -103,7 +103,7 @@ export function Testimonials() {
             {[...testimonials, ...testimonials].map((testimonial, index) => (
               <div
                 key={index}
-                className="w-[350px] shrink-0 rounded-3xl border border-gray-100 bg-gray-50 p-6 dark:border-gray-800 dark:bg-gray-900"
+                className="w-[280px] shrink-0 rounded-3xl border border-gray-100 bg-gray-50 p-6 dark:border-gray-800 dark:bg-gray-900 sm:w-[350px]"
               >
                 <div className="flex items-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary-100 to-accent-100 text-2xl dark:from-primary-900 dark:to-accent-900">

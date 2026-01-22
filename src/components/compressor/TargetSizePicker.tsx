@@ -47,7 +47,7 @@ export function TargetSizePicker({ targetSizeBytes, onChange, metadata }: Target
   const qualityHint = getQualityHint(estimatedBitrate, metadata.height);
 
   return (
-    <div className="rounded-2xl bg-gray-50 p-5 dark:bg-gray-800/50">
+    <div className="rounded-2xl bg-gray-50 p-4 dark:bg-gray-800/50 sm:p-5">
       <label className="mb-3 flex items-center gap-2 text-sm font-bold">
         <span>🎯</span> Target Size
       </label>
@@ -57,14 +57,14 @@ export function TargetSizePicker({ targetSizeBytes, onChange, metadata }: Target
         type="single"
         value={isCustom ? 'custom' : matchingPreset?.label ?? ''}
         onValueChange={handlePresetChange}
-        className="flex flex-wrap gap-2"
+        className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap"
       >
         {SIZE_PRESETS.map((preset) => (
           <ToggleGroup.Item
             key={preset.label}
             value={preset.label}
             className={cn(
-              'rounded-xl px-4 py-3 text-sm font-semibold transition-all',
+              'rounded-xl px-3 py-3 text-sm font-semibold transition-all sm:px-4',
               'border-2 hover:scale-105',
               targetSizeBytes === preset.bytes && !isCustom
                 ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
@@ -92,7 +92,7 @@ export function TargetSizePicker({ targetSizeBytes, onChange, metadata }: Target
 
       {/* Custom input */}
       {isCustom && (
-        <div className="mt-4 flex items-center gap-3">
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
           <input
             type="number"
             min={FILE_LIMITS.MIN_TARGET_SIZE / (1024 * 1024)}
@@ -101,14 +101,14 @@ export function TargetSizePicker({ targetSizeBytes, onChange, metadata }: Target
             value={customValue}
             onChange={handleCustomChange}
             placeholder="Enter size"
-            className="input w-32"
+            className="input w-full sm:w-32"
           />
           <span className="font-medium text-gray-600 dark:text-gray-400">MB</span>
         </div>
       )}
 
       {/* Quality hint */}
-      <div className="mt-4 flex items-center gap-3 rounded-xl bg-white p-3 dark:bg-gray-800">
+      <div className="mt-4 flex flex-col gap-3 rounded-xl bg-white p-3 dark:bg-gray-800 sm:flex-row sm:items-center">
         <div
           className={cn(
             'flex h-10 w-10 items-center justify-center rounded-xl text-xl',

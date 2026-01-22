@@ -31,7 +31,7 @@ export function FileDropzone({ onFileSelect }: FileDropzoneProps) {
     <div
       {...getRootProps()}
       className={cn(
-        'relative cursor-pointer rounded-3xl border-3 border-dashed p-12 text-center transition-all duration-300',
+        'relative cursor-pointer rounded-3xl border-3 border-dashed p-8 text-center transition-all duration-300 sm:p-12',
         'hover:border-primary-400 hover:bg-primary-50/50 dark:hover:bg-primary-900/10',
         isDragActive && !isDragReject && 'border-primary-500 bg-primary-50 scale-[1.02] dark:bg-primary-900/20',
         isDragReject && 'border-red-500 bg-red-50 dark:bg-red-900/20',
@@ -44,7 +44,7 @@ export function FileDropzone({ onFileSelect }: FileDropzoneProps) {
         {/* Animated icon */}
         <div
           className={cn(
-            'mb-6 flex h-20 w-20 items-center justify-center rounded-3xl transition-all duration-300',
+            'mb-6 flex h-16 w-16 items-center justify-center rounded-3xl transition-all duration-300 sm:h-20 sm:w-20',
             isDragActive && !isDragReject
               ? 'bg-primary-100 text-primary-600 scale-110 dark:bg-primary-900/50 dark:text-primary-400'
               : isDragReject
@@ -63,16 +63,16 @@ export function FileDropzone({ onFileSelect }: FileDropzoneProps) {
 
         {/* Text */}
         {isDragReject ? (
-          <p className="text-xl font-bold text-red-600 dark:text-red-400">
+          <p className="text-lg font-bold text-red-600 dark:text-red-400 sm:text-xl">
             Oops! Video files only 🎬
           </p>
         ) : isDragActive ? (
-          <p className="text-xl font-bold text-primary-600 dark:text-primary-400">
+          <p className="text-lg font-bold text-primary-600 dark:text-primary-400 sm:text-xl">
             Drop it like it's hot! 🔥
           </p>
         ) : (
           <>
-            <p className="text-xl font-bold">
+            <p className="text-lg font-bold sm:text-xl">
               Drag & drop your video here
             </p>
             <p className="mt-2 text-gray-500 dark:text-gray-400">
@@ -94,9 +94,9 @@ export function FileDropzone({ onFileSelect }: FileDropzoneProps) {
         </div>
 
         {/* Privacy note */}
-        <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary-100 px-4 py-2 text-sm font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-400">
+        <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary-100 px-4 py-2 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-400 sm:text-sm">
           <span>🔒</span>
-          Your video stays on your device — we can't see it!
+          Your video stays on your device - we can't see it!
         </div>
       </div>
     </div>
