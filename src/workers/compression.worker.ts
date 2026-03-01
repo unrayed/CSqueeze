@@ -554,7 +554,7 @@ async function demuxVideo(buffer: ArrayBuffer): Promise<DemuxResult> {
         // Extract video description from first sample if not already done
         if (!videoDescription && samples[0]?.description) {
           try {
-            // mp4box stores the raw box data - we need to extract avcC content
+            // mp4box stores the raw box data - we need to extract codec box content
             const desc = samples[0].description as Record<string, unknown>;
             
             if (desc.avcC) {
@@ -624,6 +624,16 @@ async function demuxVideo(buffer: ArrayBuffer): Promise<DemuxResult> {
                 
                 videoDescription = uint8;
               }
+            } else if (desc.hvcC) {
+              const hvcC = desc.hvcC as { data?: Uint8Array; size?: number } | Uint8Array | ArrayBuffer;
+              
+              if (hvcC instanceof Uint8Array) {
+                videoDescription = hvcC;
+              } else if (hvcC instanceof ArrayBuffer) {
+                videoDescription = new Uint8Array(hvcC);
+              } else if (hvcC?.data instanceof Uint8Array) {
+                videoDescription = hvcC.data;
+              }
             }
           } catch (e) {
             console.warn('Could not extract description from sample:', e);
@@ -651,7 +661,7 @@ async function demuxVideo(buffer: ArrayBuffer): Promise<DemuxResult> {
   });
 }
 
-function getDecoderConfig(metadata: VideoMetadata, _firstSample?: MP4Sample, avccData?: Uint8Array): VideoDecoderConfig {
+function getDecoderConfig(metadata: VideoMetadata, _firstSample?: MP4Sample, descriptionData?: Uint8Array): VideoDecoderConfig {
   let codec = metadata.videoCodec;
   
   if (codec.startsWith('avc1') || codec.startsWith('avc3')) {
@@ -666,8 +676,8 @@ function getDecoderConfig(metadata: VideoMetadata, _firstSample?: MP4Sample, avc
     codedHeight: metadata.height,
   };
 
-  if (avccData) {
-    config.description = avccData;
+  if (descriptionData) {
+    config.description = descriptionData;
   }
 
   return config;
@@ -683,8 +693,11 @@ function getSuggestionForError(error: string): string {
   if (error.includes('codec not supported')) {
     return 'Try converting your video to H.264/MP4 format first using another tool.';
   }
+  if (error.includes('key frame') || error.includes('keyframe') || error.includes('description field')) {
+    return 'This file needs a keyframe or codec description to decode. Try re-exporting as H.264 or add more frequent keyframes, then retry.';
+  }
   if (error.includes('too small')) {
-    return 'Increase target size, enable downscaling, or reduce video duration.';
+    return 'Increase target size, choose a lower resolution, or reduce video duration.';
   }
   if (error.includes('memory')) {
     return 'Try a smaller video file or close other browser tabs to free up memory.';
