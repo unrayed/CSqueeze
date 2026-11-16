@@ -24,7 +24,7 @@ function App() {
           id="compressor"
           className="scroll-mt-16 section-padding bg-white dark:bg-mist-900"
         >
-          <div className="mx-auto max-w-3xl px-6 lg:px-8">
+          <div className="mx-auto max-w-5xl px-6 lg:px-8">
             <div className="max-w-xl">
               <p className="eyebrow">The compressor</p>
               <h2 className="mt-3 text-balance text-3xl font-medium tracking-[-0.01em] sm:text-4xl">
