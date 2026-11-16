@@ -33,7 +33,7 @@ const comparisons = [
     desktopApps: 'complex',
   },
   {
-    feature: 'Works offline',
+    feature: 'Works offline after load',
     clipsqueeze: true,
     cloudConverters: false,
     desktopApps: true,

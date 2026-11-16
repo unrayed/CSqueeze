@@ -1,72 +1,126 @@
-// Video metadata extracted from input file
+export type QualityPreset = 'fast' | 'balanced' | 'best';
+
+export type ResolutionCap = 'auto' | 'source' | 1080 | 720 | 480 | 360 | 240;
+
+export type FpsCap = 'auto' | 'source' | 60 | 30 | 24;
+
+export type AudioKbps = 'auto' | 64 | 96 | 128 | 192;
+
+export type Rotation = 0 | 90 | 180 | 270;
+
 export interface VideoMetadata {
   filename: string;
   fileSize: number;
-  duration: number; // seconds
+  duration: number;
   width: number;
   height: number;
   fps: number;
   videoCodec: string;
   audioCodec: string | null;
   hasAudio: boolean;
+  audioChannels: number | null;
+  audioSampleRate: number | null;
+  rotation: Rotation;
+  container: string;
 }
 
-// Compression settings from user
 export interface CompressionSettings {
   targetSizeBytes: number;
-  audioBitrate: number; // bits per second (e.g., 96000 or 128000)
-  targetResolution: number | null; // null = keep original, otherwise target height (720, 480, etc.)
+  preset: QualityPreset;
+  resolution: ResolutionCap;
+  fps: FpsCap;
+  audioKbps: AudioKbps;
   muteAudio: boolean;
+  toleranceOverride?: number;
+  passesOverride?: number;
 }
 
-// Internal encoding parameters computed from settings
 export interface EncodingParams {
-  videoBitrate: number; // bits per second
-  audioBitrate: number; // bits per second
+  videoBitrate: number;
+  audioBitrate: number;
   width: number;
   height: number;
   fps: number;
   muteAudio: boolean;
 }
 
-// Progress stages during compression
 export type CompressionStage =
   | 'idle'
   | 'reading'
-  | 'analyzing'
+  | 'demuxing'
   | 'encoding'
-  | 'retrying'
   | 'finalizing'
   | 'complete'
   | 'error'
   | 'cancelled';
 
-// Progress update from worker
 export interface CompressionProgress {
   stage: CompressionStage;
-  progress: number; // 0-100
-  currentAttempt: number;
-  maxAttempts: number;
-  message: string;
+  progress: number;
+  pass: number;
+  passCount: number;
+  passProgress: number;
+  processedFrames: number;
+  totalFrames: number;
   currentBitrate?: number;
-  estimatedSize?: number;
+  width: number;
+  height: number;
+  fps: number;
+  elapsedMs: number;
+  etaMs: number | null;
+  message: string;
 }
 
-// Final compression result
-export interface CompressionResult {
-  success: boolean;
-  blob?: Blob;
-  outputSize?: number;
-  originalSize: number;
-  duration: number;
-  encodingTime: number; // milliseconds
-  attempts: number;
-  finalBitrate?: number;
-  error?: string;
+export type CompressionErrorCode =
+  | 'unsupported-container'
+  | 'unsupported-codec'
+  | 'unsupported-audio'
+  | 'decode-failed'
+  | 'encode-failed'
+  | 'mux-failed'
+  | 'target-too-small'
+  | 'memory'
+  | 'file-too-large'
+  | 'read-failed'
+  | 'cancelled'
+  | 'unknown';
+
+export interface CompressionError {
+  code: CompressionErrorCode;
+  message: string;
   suggestion?: string;
 }
 
-// Messages sent to worker
+export interface CompressionReport {
+  targetBytes: number;
+  outputBytes: number;
+  originalBytes: number;
+  durationSeconds: number;
+  width: number;
+  height: number;
+  fps: number;
+  videoCodec: string;
+  audioCodec: string | null;
+  audioBitrate: number | null;
+  audioChannels: number;
+  passes: number;
+  elapsedMs: number;
+  hitTarget: boolean;
+  overTarget: boolean;
+  withinTolerance: boolean;
+  targetDeltaRatio: number;
+  resolutionReduced: boolean;
+  fpsReduced: boolean;
+  skipped: boolean;
+}
+
+export interface CompressionResult {
+  success: boolean;
+  blob?: Blob;
+  report?: CompressionReport;
+  error?: CompressionError;
+}
+
 export type WorkerInputMessage =
   | {
       type: 'compress';
@@ -78,12 +132,7 @@ export type WorkerInputMessage =
       type: 'cancel';
     };
 
-// Messages received from worker
 export type WorkerOutputMessage =
-  | {
-      type: 'metadata';
-      metadata: VideoMetadata;
-    }
   | {
       type: 'progress';
       progress: CompressionProgress;
@@ -93,20 +142,21 @@ export type WorkerOutputMessage =
       result: CompressionResult;
     }
   | {
+      type: 'cancelled';
+    }
+  | {
       type: 'error';
-      error: string;
-      suggestion?: string;
+      error: CompressionError;
     };
 
-// Preset target sizes
 export interface SizePreset {
   label: string;
   bytes: number;
   description: string;
 }
 
-// Resolution steps for downscaling
-export interface ResolutionStep {
-  name: string;
-  maxHeight: number;
+export interface SelectOption<T> {
+  value: T;
+  label: string;
+  description?: string;
 }

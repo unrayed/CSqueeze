@@ -17,27 +17,32 @@ const faqs = [
   {
     question: 'Why can’t I get perfect quality at 10 MB?',
     answer:
-      'Compression is a tradeoff between size and quality. For a 2-minute clip, 10 MB is tight. Try a lower resolution from the list, like 720p or 480p, and a higher quality setting. That usually looks better than squeezing 1080p too hard.',
+      'Compression is a tradeoff between size and quality. For a 2-minute clip, 10 MB is tight. Try a lower resolution cap, like 720p or 480p, or the Best preset. That usually looks better than squeezing 1080p too hard.',
   },
   {
     question: 'Why does it retry multiple times?',
     answer:
-      'Encoding is not perfectly predictable. The final size depends on motion and detail, so we start with an estimate, check the result, then lower the bitrate and retry until it fits your target.',
+      'Encoding is not perfectly predictable. The final size depends on motion and detail, so the encoder starts with an estimate, checks the result, then adjusts and retries within the selected preset’s pass limit. When it still overshoots, the result warns you and offers a finer retry.',
   },
   {
-    question: 'Which browsers work best?',
+    question: 'Which browsers are supported?',
     answer:
-      'Chrome, Edge, and Brave work best. Firefox and Safari are improving but can be limited depending on WebCodecs support.',
+      'Chrome, Edge, Brave, Opera, and Chromium. Firefox and Safari are not supported because they do not provide the WebCodecs video encoding this tool needs.',
+  },
+  {
+    question: 'Does it work offline?',
+    answer:
+      'After the page has loaded, compression runs locally and needs no network connection. Opening the page still requires a connection.',
   },
   {
     question: 'What is the maximum file size I can compress?',
     answer:
-      'For the smoothest experience, keep videos under 500 MB and under 5 minutes. Larger files can work but may be slow or memory heavy.',
+      'For the smoothest experience, keep videos under 500 MB and under 5 minutes. Files up to 2 GB are accepted, but larger files may be slow or memory heavy.',
   },
   {
     question: 'What happens to audio?',
     answer:
-      'If your video has AAC audio, we keep it. Other formats might be muted for now. You can also mute audio to save a bit more size.',
+      'Audio is kept when the browser can decode it. If it cannot, the tool reports the problem. You can also mute audio to leave more of the target for video.',
   },
   {
     question: 'Can I use this for commercial projects?',

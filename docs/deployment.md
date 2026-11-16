@@ -1,6 +1,6 @@
 # Deployment Guide
 
-ClipSqueeze is a static site that can be deployed to any static hosting provider for free.
+CSqueeze is a static site that can be deployed to any static hosting provider for free.
 
 ## Quick Start
 

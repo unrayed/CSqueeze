@@ -1,5 +1,29 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import {
+  detectContainer,
+  getFileExtension,
+  isSupportedContainer,
+  isSupportedExtension,
+  isSupportedMimeType,
+  isSupportedVideoFile,
+  rotationFromMatrix,
+  validateVideoFile,
+  type FileValidation,
+  type SupportedContainer,
+} from './media';
+
+export {
+  detectContainer,
+  getFileExtension,
+  isSupportedContainer,
+  isSupportedExtension,
+  isSupportedMimeType,
+  isSupportedVideoFile,
+  rotationFromMatrix,
+  validateVideoFile,
+};
+export type { FileValidation, SupportedContainer };
 
 /**
  * Merge Tailwind CSS classes with clsx
@@ -80,13 +104,102 @@ export function isWebCodecsSupported(): boolean {
   );
 }
 
+export function isAudioWebCodecsSupported(): boolean {
+  return (
+    typeof AudioEncoder !== 'undefined' &&
+    typeof AudioDecoder !== 'undefined' &&
+    typeof AudioData !== 'undefined'
+  );
+}
+
+export async function supportsVideoEncoding(codec = 'avc1.42001f'): Promise<boolean> {
+  if (typeof VideoEncoder === 'undefined') return false;
+  try {
+    const support = await VideoEncoder.isConfigSupported({
+      codec,
+      width: 1280,
+      height: 720,
+      bitrate: 2_000_000,
+      framerate: 30,
+      bitrateMode: 'variable',
+    });
+    return Boolean(support.supported);
+  } catch {
+    return false;
+  }
+}
+
+export async function supportsVideoDecoding(codec = 'avc1.42001f'): Promise<boolean> {
+  if (typeof VideoDecoder === 'undefined') return false;
+  try {
+    const support = await VideoDecoder.isConfigSupported({ codec });
+    return Boolean(support.supported);
+  } catch {
+    return false;
+  }
+}
+
+export async function supportsAudioEncoding(): Promise<boolean> {
+  if (!isAudioWebCodecsSupported()) return false;
+
+  try {
+    const [encoderSupport, decoderSupport] = await Promise.all([
+      AudioEncoder.isConfigSupported({
+        codec: 'mp4a.40.2',
+        sampleRate: 48_000,
+        numberOfChannels: 2,
+        bitrate: 128_000,
+      }),
+      AudioDecoder.isConfigSupported({
+        codec: 'mp4a.40.2',
+        sampleRate: 48_000,
+        numberOfChannels: 2,
+      }),
+    ]);
+    return Boolean(encoderSupport.supported && decoderSupport.supported);
+  } catch {
+    return false;
+  }
+}
+
+export async function supportsAacAudio(): Promise<boolean> {
+  return supportsAudioEncoding();
+}
+
+export async function getSupportedVideoCodec(
+  candidates: readonly string[]
+): Promise<string | null> {
+  for (const codec of candidates) {
+    if (await supportsVideoEncoding(codec)) return codec;
+  }
+  return null;
+}
+
+export function isFileTypeSupported(file: File): boolean {
+  return isSupportedVideoFile(file);
+}
+
+export function isContainerSupported(container: string | null): boolean {
+  return isSupportedContainer(container);
+}
+
+export function getOutputFilename(filename: string): string {
+  const dot = filename.lastIndexOf('.');
+  const base = dot > 0 ? filename.slice(0, dot) : filename;
+  return `${base}_squeezed.mp4`;
+}
+
+
 /**
  * Check if running in a Chromium-based browser
  */
 export function isChromiumBased(): boolean {
   if (typeof navigator === 'undefined') return false;
   const ua = navigator.userAgent;
-  return /Chrome|Chromium|Edg|OPR|Brave/i.test(ua) && !/Firefox|Safari/i.test(ua.replace(/Chrome|Chromium|Edg|OPR|Brave/gi, ''));
+  if (/Firefox|FxiOS/i.test(ua)) return false;
+  const isChromium = /Chrome|Chromium|CriOS|Edg|OPR|Brave/i.test(ua);
+  if (!isChromium) return false;
+  return !/Version\/[\d.]+.*Safari/i.test(ua);
 }
 
 /**

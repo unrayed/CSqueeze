@@ -24,9 +24,9 @@ export function Hero() {
           </h1>
 
           <p className="mt-6 max-w-[46ch] text-base leading-7 text-mist-600 dark:text-mist-300 sm:text-lg sm:leading-8">
-            Set a target, and CSqueeze re-encodes the file in this tab until it
-            fits. Discord&rsquo;s 10 MB, an email attachment, a 25 MB upload. It
-            never leaves your device.
+            Set a target, and CSqueeze re-encodes the file in this tab to fit. If
+            the target is out of reach, it says so plainly. The file never
+            leaves your device.
           </p>
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">

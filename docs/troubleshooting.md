@@ -1,145 +1,157 @@
 # Troubleshooting Guide
 
-Common issues and solutions for ClipSqueeze.
+Common issues and solutions for CSqueeze.
 
 ## Browser Issues
 
-### "Browser not supported" message
+### "Use a Chromium-based browser" message
 
-**Cause**: WebCodecs API is not available.
+**Cause**: WebCodecs is unavailable.
 
 **Solutions**:
-1. Use Chrome, Edge, or another Chromium-based browser
-2. Update your browser to the latest version
-3. If using Firefox, WebCodecs is behind a flag and may not work fully
+
+1. Use Chrome, Edge, Brave, Opera, or Chromium on desktop
+2. Update to a recent browser version
+3. Firefox and Safari are not supported; no flag enables the required encode APIs
 
 ### Page crashes or freezes
 
-**Cause**: Usually memory-related.
+**Cause**: Usually memory pressure.
 
 **Solutions**:
-1. Close other browser tabs to free memory
-2. Try a smaller video file
-3. Restart your browser
+
+1. Close other tabs
+2. Try a shorter or smaller video
+3. Restart the browser
 4. Use a device with more RAM
 
 ## Compression Issues
 
-### "Could not compress to target size"
+### "Missed the target"
 
-**Cause**: Target size is too small for the video.
-
-**Solutions**:
-1. Enable "Allow downscale" in advanced settings
-2. Enable "Allow FPS reduction" in advanced settings
-3. Increase your target size
-4. Mute audio to save space
-5. Trim your video (use another tool first)
-
-### Output quality is very poor
-
-**Cause**: Bitrate is too low for the resolution.
+**Cause**: The best attempt is still outside the selected tolerance. Small targets can be impossible once audio plus the 100 kbps video floor exceed the budget.
 
 **Solutions**:
-1. Enable "Allow downscale" - lower resolution at higher bitrate looks better
-2. Increase target size
-3. Reduce video duration before compressing
+
+1. Click **Retry finer** (half the tolerance, two extra passes)
+2. Use Balanced or Best so the resolution ladder can engage
+3. Raise the target size
+4. Mute audio
+5. Lower the resolution or frame-rate cap in Advanced settings
+
+### "Unsupported audio"
+
+**Cause**: The browser cannot decode the source audio, or cannot encode AAC with these settings. Chrome on Linux currently exposes only Opus encoding, so AAC encode is unavailable there.
+
+**Solutions**:
+
+1. Enable **Mute audio** in Advanced settings to compress the video track only
+2. Re-export the source with AAC audio
+3. Use a platform/browser with AAC encoding (Chrome on Windows or macOS)
+
+### Output quality is poor
+
+**Cause**: Bitrate is too low for the chosen resolution or the content is complex.
+
+**Solutions**:
+
+1. Use Balanced or Best so resolution drops before quality collapses
+2. Raise the target size
+3. Lower the frame-rate cap
+4. Trim the clip first
 
 ### Compression takes too long
 
-**Cause**: Large file, high resolution, or slow device.
+**Cause**: Large file, high resolution, high fps, or a slower device.
 
 **Solutions**:
-1. Be patient - progress is shown in the UI
-2. Use a more powerful device
-3. Process shorter/smaller videos
-4. Close other applications
 
-### Output has no audio
+1. Watch the progress panel; ETA appears after frames start flowing
+2. Use the Fast preset
+3. Lower the resolution or frame-rate cap
+4. Process shorter clips
 
-**Cause**: Input audio is not AAC format.
+### Progress appears stuck
+
+**Cause**: A complex scene or memory pressure. The worker includes demux, audio, encode, and mux phases in overall progress, and it reports elapsed time and ETA.
 
 **Solutions**:
-1. Convert source video to use AAC audio first
-2. Accept muted output if audio isn't critical
-3. Most MP4 files from phones use AAC and should work
+
+1. Wait briefly; the ETA updates as frames complete
+2. If it does not move for several minutes, cancel and retry with a smaller target or lower resolution
+3. Refresh and try again
 
 ## File Issues
 
-### "No video track found"
+### "Unsupported container"
 
-**Cause**: File is not a valid video or uses unsupported container.
-
-**Solutions**:
-1. Verify the file plays in your browser
-2. Try converting to MP4 format first
-3. Check if file is corrupted
-
-### "Input video codec not supported"
-
-**Cause**: Video uses a codec WebCodecs can't decode.
+**Cause**: The file is not MP4, MOV, or M4V.
 
 **Solutions**:
-1. Convert to H.264 using FFmpeg or HandBrake
-2. Try a different video file
 
-### File won't upload/select
+1. Convert WebM, MKV, AVI, or other containers to MP4 first
+2. Verify the file plays in your browser
+3. Check the file is not corrupted
 
-**Cause**: File type not recognized.
+### "Unsupported video codec"
+
+**Cause**: The browser's `VideoDecoder` cannot decode the source codec.
 
 **Solutions**:
-1. Rename file extension to .mp4 if it's actually an MP4
-2. Convert to a supported format
-3. Check file isn't corrupted
+
+1. Re-export as H.264 MP4
+2. Try a browser/platform with support for that codec (HEVC/AV1 depend on the OS and GPU)
+3. Try a different file
+
+### File won't select
+
+**Cause**: Extension/MIME type is outside the accepted set.
+
+**Solutions**:
+
+1. Confirm the file is really MP4, MOV, or M4V
+2. Rename only if the container is correct; do not rename a WebM to .mp4
+3. Convert to MP4 first
 
 ## UI Issues
 
 ### Dark mode not working
 
-**Solutions**:
-1. Click the theme toggle in the header
-2. Select "Dark" explicitly
+1. Use the theme toggle in the header
+2. Select Dark explicitly
 3. Clear localStorage and refresh
-
-### Progress stuck at a percentage
-
-**Cause**: Encoding a complex section or memory pressure.
-
-**Solutions**:
-1. Wait a bit longer - complex scenes take more time
-2. If stuck for minutes, cancel and try smaller target size
-3. Refresh page and try again
 
 ### Download button doesn't work
 
-**Solutions**:
-1. Check if popup blocker is preventing download
-2. Right-click and "Save link as..."
-3. Try a different browser
+1. Check the popup/download blocker
+2. Right-click and choose "Save link as..."
+3. Try another browser
+
+### Compare previews are not in sync
+
+The two videos share one playhead. If one lags after seeking, press pause and play again. A difference over 0.1 s is corrected automatically during playback.
 
 ## Performance Tips
 
-### For best results:
+1. Close other tabs to free RAM
+2. Use Chrome or Edge desktop for the most tested path
+3. Prefer desktop over mobile for long clips
+4. Test with short clips first
+5. Set realistic targets: 8 MB for a 5-minute video is extremely aggressive
 
-1. **Close other tabs** - More RAM available for processing
-2. **Use Chrome** - Best WebCodecs support
-3. **Desktop over mobile** - More processing power
-4. **Smaller files first** - Test with short clips
-5. **Reasonable targets** - Don't expect miracles from 8MB for a 5-min video
+### Typical processing times
 
-### Estimated processing times:
+| Video | Fast | Balanced/Best |
+| --- | --- | --- |
+| 30s 720p | 10–20s | 20–60s |
+| 60s 1080p | 30–60s | 1–3 min |
+| 3 min 1080p | 2–4 min | 5–10 min |
 
-- 30 seconds @ 720p: ~15 seconds
-- 1 minute @ 1080p: ~45 seconds
-- 3 minutes @ 1080p: ~3 minutes
-
-Actual times depend on your device.
+Actual times depend on the device and content.
 
 ## Getting Help
 
-If you're still having issues:
-
-1. Check browser console (F12) for error messages
-2. Note your browser version and OS
-3. Describe the video (format, duration, resolution)
+1. Check the browser console (F12)
+2. Note the browser version and OS
+3. Note the container, codecs, duration, resolution, and the error code shown in the UI
 4. Report with steps to reproduce

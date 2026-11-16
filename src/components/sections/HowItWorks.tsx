@@ -7,28 +7,28 @@ const steps = [
     icon: Upload,
     title: 'Drop your video',
     description:
-      'Drag a file in or browse. MP4, MOV, WebM, MKV and AVI are supported.',
+      'Drag a file in or browse. MP4, MOV, and M4V files are supported.',
   },
   {
     number: '02',
     icon: SlidersHorizontal,
     title: 'Pick your size',
     description:
-      'Choose 10 MB, 25 MB, 50 MB or type any target up to 500 MB.',
+      'Choose 8 MB, 10 MB, 25 MB, 50 MB, 100 MB, or type any target from 1 to 500 MB.',
   },
   {
     number: '03',
     icon: Cpu,
     title: 'Compress',
     description:
-      'The encoder runs in a worker, checks the output size, and retries with a lower bitrate if it overshoots.',
+      'The encoder runs in a worker, checks the output size, and retries within the preset’s pass limit. If it cannot reach the target, the result says so.',
   },
   {
     number: '04',
     icon: Download,
-    title: 'Download',
+    title: 'Compare and download',
     description:
-      'Preview the MP4 in the browser and download it. Nothing is uploaded at any point.',
+      'Compare the original and compressed video, then download the MP4. Nothing is uploaded at any point.',
   },
 ];
 

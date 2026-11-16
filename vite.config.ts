@@ -25,7 +25,4 @@ export default defineConfig({
       },
     },
   },
-  optimizeDeps: {
-    exclude: ['mp4box'],
-  },
 });

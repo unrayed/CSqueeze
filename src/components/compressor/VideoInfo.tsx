@@ -1,4 +1,13 @@
-import { X, Film, HardDrive, Monitor, Gauge, Clock, type LucideIcon } from 'lucide-react';
+import {
+  X,
+  Film,
+  HardDrive,
+  Monitor,
+  Gauge,
+  Clock,
+  RotateCw,
+  type LucideIcon,
+} from 'lucide-react';
 import { formatBytes, formatDuration } from '../../lib/utils';
 import type { VideoMetadata } from '../../types';
 
@@ -10,6 +19,17 @@ interface VideoInfoProps {
 }
 
 export function VideoInfo({ metadata, thumbnail, onRemove, disabled }: VideoInfoProps) {
+  const videoCodec = metadata.videoCodec.split('.')[0] ?? metadata.videoCodec;
+  const audioCodec = metadata.audioCodec
+    ? metadata.audioCodec.split('.')[0] ?? metadata.audioCodec
+    : null;
+  const audioDetails = [
+    metadata.audioChannels !== null ? `${metadata.audioChannels} ch` : null,
+    metadata.audioSampleRate !== null
+      ? `${Math.round(metadata.audioSampleRate / 1000)} kHz`
+      : null,
+  ].filter((value): value is string => value !== null);
+
   return (
     <div className="flex flex-col gap-4 rounded-xl border border-mist-200 bg-white p-3 dark:border-mist-800 dark:bg-mist-900 sm:flex-row">
       <div className="relative h-40 w-full flex-shrink-0 overflow-hidden rounded-lg bg-mist-100 dark:bg-mist-800 sm:h-28 sm:w-44">
@@ -24,7 +44,7 @@ export function VideoInfo({ metadata, thumbnail, onRemove, disabled }: VideoInfo
             <Film className="h-6 w-6" strokeWidth={1.5} />
           </div>
         )}
-        <div className="mono absolute bottom-2 right-2 rounded bg-black/70 px-1.5 py-0.5 text-xs leading-4 text-white">
+        <div className="mono absolute bottom-2 right-2 rounded-md bg-black/70 px-1.5 py-0.5 text-xs leading-4 text-white">
           {formatDuration(metadata.duration)}
         </div>
       </div>
@@ -52,15 +72,23 @@ export function VideoInfo({ metadata, thumbnail, onRemove, disabled }: VideoInfo
         </div>
 
         <div className="mono mt-3 flex flex-wrap items-center gap-2 text-xs text-mist-500 dark:text-mist-400">
-          <span className="rounded border border-mist-200 px-1.5 py-0.5 dark:border-mist-700">
-            {metadata.videoCodec.split('.')[0]}
+          <span className="rounded-md border border-mist-200 px-1.5 py-0.5 dark:border-mist-700">
+            {videoCodec}
           </span>
-          {metadata.hasAudio && metadata.audioCodec && (
-            <span className="rounded border border-mist-200 px-1.5 py-0.5 dark:border-mist-700">
-              {metadata.audioCodec.split('.')[0]} audio
+          {metadata.hasAudio ? (
+            <span className="rounded-md border border-mist-200 px-1.5 py-0.5 dark:border-mist-700">
+              {audioCodec ?? 'Audio'} audio
+              {audioDetails.length > 0 ? ` · ${audioDetails.join(' · ')}` : ''}
+            </span>
+          ) : (
+            <span>No audio</span>
+          )}
+          {metadata.rotation !== 0 && (
+            <span className="inline-flex items-center gap-1 rounded-md border border-mist-200 px-1.5 py-0.5 dark:border-mist-700">
+              <RotateCw className="h-3 w-3" strokeWidth={1.5} />
+              Rotated {metadata.rotation}°
             </span>
           )}
-          {!metadata.hasAudio && <span>No audio</span>}
         </div>
       </div>
     </div>

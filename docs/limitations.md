@@ -1,225 +1,206 @@
 # Known Limitations
 
-This document outlines the current limitations of ClipSqueeze and potential workarounds.
+This document describes the current limitations of CSqueeze and practical workarounds.
 
 ## Browser Support
 
-### WebCodecs Requirement
+### WebCodecs requirement
 
-ClipSqueeze requires the WebCodecs API, which is currently only fully supported in Chromium-based browsers:
+CSqueeze requires WebCodecs and a secure context (HTTPS or localhost).
 
 | Browser | Support | Notes |
-|---------|---------|-------|
-| Chrome 94+ | ✅ Full | Recommended |
-| Edge 94+ | ✅ Full | Recommended |
-| Brave | ✅ Full | Works well |
-| Opera | ✅ Full | Works well |
-| Arc | ✅ Full | Works well |
-| Firefox | ⚠️ Partial | Behind flag, may not work |
-| Safari | ⚠️ Partial | Limited codec support |
+| --- | --- | --- |
+| Chrome (desktop) | Supported | Recommended |
+| Edge (desktop) | Supported | Recommended |
+| Brave | Supported | Works well |
+| Opera | Supported | Works well |
+| Chromium | Supported | Works well |
+| Firefox | Not supported | No WebCodecs audio/video encoding |
+| Safari | Not supported | No WebCodecs audio/video encoding |
 
-**Workaround**: Use Chrome or Edge for best experience.
+### Mobile browsers
 
-### Mobile Browsers
-
-Mobile browser support varies:
-- Chrome for Android: Works, but slower
-- Safari iOS: Limited/No support
-- Samsung Internet: May work
-
-**Note**: Mobile devices have limited memory and processing power. Large videos may fail or be very slow.
+- Chrome for Android may work but is slower and memory-constrained.
+- Safari on iOS is not supported.
+- Large videos may fail on mobile regardless of browser.
 
 ---
 
 ## File Size Limits
 
-### Recommended Limits
+| Aspect | Recommended | Hard limit |
+| --- | --- | --- |
+| File size | under 500 MB | 2 GB |
+| Duration | under 5 minutes | none (warned above 5 minutes) |
+| Resolution | 1080p output by default | source height when "Original" is selected |
 
-| Aspect | Recommended | Maximum |
-|--------|-------------|---------|
-| File size | < 200 MB | ~500 MB |
-| Duration | < 3 min | 5 min |
-| Resolution | 1080p | 4K |
+### Memory constraints
 
-### Memory Constraints
+The whole file is read into memory, samples are retained for the job, and the muxed output is buffered before the blob is created. Practical limits depend on device RAM, browser limits, and other open tabs.
 
-The entire video is loaded into memory for processing. Limits depend on:
-- Device RAM
-- Browser memory limits
-- Other open tabs/apps
+Symptoms of memory pressure:
 
-**Symptoms of memory issues:**
 - Browser becomes unresponsive
-- Page crashes
+- Tab crashes
 - "Out of memory" errors
 
-**Workarounds:**
-1. Close other browser tabs
-2. Use a desktop device (more RAM)
-3. Process smaller files
-4. Trim video before compressing
+Workarounds:
+
+1. Close other tabs
+2. Use a desktop device with more RAM
+3. Process a shorter clip
+4. Trim the video before compressing
 
 ---
 
 ## Audio Handling
 
-### Current Behavior
+Audio is always re-encoded to AAC through WebCodecs `AudioDecoder` + `AudioEncoder`.
 
-| Input Audio | Output |
-|-------------|--------|
-| AAC | Passthrough (preserved) |
-| MP3 | Muted |
-| Opus | Muted |
-| Other | Muted |
+| Situation | Result |
+| --- | --- |
+| Browser can decode source audio and encode AAC | AAC track at the selected or derived bitrate |
+| Source audio codec cannot be decoded | `unsupported-audio` error |
+| Browser cannot encode AAC | `unsupported-audio` error |
+| Mute audio enabled | MP4 with no audio track |
 
-### Why This Limitation?
+### Chrome on Linux
 
-AudioEncoder (the WebCodecs API for audio encoding) has limited browser support and codec availability. Rather than fail for unsupported codecs, we:
-1. Pass through AAC audio directly
-2. Mute audio for other formats
+Chrome on Linux exposes only Opus encoding through WebCodecs, not AAC. With the fixed MP4/AAC output contract, any file with audio on Linux Chrome stops with an `Unsupported audio` error. Enable **Mute audio** in Advanced settings to compress the video track only.
 
-### Workarounds
+### Multi-track audio
 
-1. **Pre-convert to AAC**: Use FFmpeg or another tool to convert audio to AAC before compressing
-2. **Enable mute**: If audio isn't important, mute to save file size
-3. **Accept current behavior**: Most modern videos already use AAC
-
-### Future Improvement
-
-When AudioEncoder support improves, we plan to:
-- Re-encode all audio formats to AAC
-- Support configurable audio codecs
+Only the first audio track is read. Additional audio tracks are dropped.
 
 ---
 
-## Codec Support
+## Container and Codec Support
 
-### Input Codecs
+### Accepted containers
+
+| Container | Accepted |
+| --- | --- |
+| MP4 | Yes |
+| MOV | Yes |
+| M4V | Yes |
+| WebM | No |
+| MKV | No |
+| AVI | No |
+
+Unsupported containers are rejected before compression with an `Unsupported container` error. Convert them to MP4 first.
+
+### Input codecs
+
+Input video must be decodable by the browser's `VideoDecoder`. In practice:
 
 | Codec | Support |
-|-------|---------|
-| H.264 (AVC) | ✅ Excellent |
-| H.265 (HEVC) | ⚠️ Limited |
-| VP8 | ✅ Good |
-| VP9 | ✅ Good |
-| AV1 | ⚠️ Limited |
+| --- | --- |
+| H.264 (AVC) | Reliable |
+| HEVC (H.265) | Depends on platform/GPU support |
+| AV1 | Depends on platform support |
+| VP9 | Depends on platform support |
 
-### Output Codec
+Audio must be decodable by `AudioDecoder` (AAC and MP3 are common; Opus in MP4 is uncommon).
 
-Output is always **H.264 Baseline profile** for maximum compatibility.
+### Output
 
-### Why H.264 Only?
-
-- Universal playback support
-- Hardware encoding widely available
-- Best balance of quality, speed, and compatibility
+Output is always MP4 / H.264 / AAC. The H.264 profile is chosen once per job from a support probe (Baseline through High); the report shows the selected codec string. There is no HEVC, AV1, or WebM output.
 
 ---
 
 ## Quality Limitations
 
-### Very Small Target Sizes
+### Very small targets
 
-When targeting very small sizes (e.g., 8MB for a 2-minute video), quality will be noticeably reduced:
+Small targets reduce quality noticeably:
 
-**Visual artifacts:**
-- Blocking (square artifacts)
+- Blocking
 - Banding in gradients
 - Loss of fine detail
-- Motion blur/smearing
+- Motion smear
 
-**Workarounds:**
-1. Enable "Allow downscale" - Lower resolution at higher bitrate often looks better
-2. Increase target size if possible
-3. Trim video to reduce duration
-4. Accept lower quality for size constraints
+Mitigations:
 
-### Content Complexity
+1. Use the Balanced or Best preset so the resolution ladder can engage
+2. Raise the target size
+3. Trim the video
+4. Lower the frame-rate cap in Advanced settings
 
-Some content compresses better than others:
+### Content complexity
 
-| Content Type | Compression |
-|--------------|-------------|
+| Content | Compressibility |
+| --- | --- |
 | Talking head, static background | Excellent |
 | Screen recording | Good |
 | Animation | Good |
-| Sports/Action | Poor |
-| Nature/High detail | Poor |
-| Confetti/Particles | Very poor |
+| Sports/action | Poor |
+| Nature/high detail | Poor |
+| Particles/confetti | Very poor |
 
-High-motion or high-detail content needs more bitrate for acceptable quality.
+### Target misses
+
+The result panel always reports the truth. If no attempt lands inside the selected tolerance:
+
+- The best attempt is returned with an amber "Missed the target" state
+- The exact overage is shown
+- **Retry finer** re-runs with half the tolerance and two extra passes
+
+A target smaller than the minimum video bitrate plus audio can be impossible; the report will show the miss.
 
 ---
 
 ## Processing Speed
 
-### Factors Affecting Speed
+### Factors
 
-1. **Video duration** - Linear relationship
-2. **Resolution** - Higher = slower
-3. **Device CPU** - Faster CPU = faster encoding
-4. **Hardware acceleration** - When available, significantly faster
+1. Duration
+2. Resolution
+3. Frame rate
+4. Device CPU/GPU
+5. Preset (Fast 2 passes, Balanced 4, Best 6)
 
-### Typical Processing Times
+### Typical times
 
-On a modern laptop (Intel i7/M1):
+On a modern laptop:
 
-| Video | Expected Time |
-|-------|---------------|
-| 30s 720p | 10-20 seconds |
-| 60s 1080p | 30-60 seconds |
-| 3min 1080p | 2-4 minutes |
-| 5min 1080p | 4-8 minutes |
+| Video | Fast | Balanced/Best |
+| --- | --- | --- |
+| 30s 720p | 10–20s | 20–60s |
+| 60s 1080p | 30–60s | 1–3 min |
+| 3 min 1080p | 2–4 min | 5–10 min |
+| 5 min 1080p | 4–8 min | 10–20 min |
 
-Older devices or mobile may be 2-5x slower.
-
-### Why Not Faster?
-
-- Single-threaded encoding (WebCodecs limitation)
-- JavaScript overhead
-- Memory copying between main thread and worker
+Older devices and mobile may be several times slower.
 
 ---
 
 ## Features Not Supported
 
-### Not Currently Implemented
+- Batch processing: one video at a time
+- Trimming or start/end selection
+- Crop or custom width/height
+- Multiple outputs at once
+- Subtitle/chapter/metadata preservation
+- Multiple audio tracks
+- Output codec or container choice
+- HEVC, AV1, or WebM output
+- Frame-accurate compare slider (playback is synced, not frame-stepped)
 
-- **Batch processing**: One video at a time
-- **Video trimming**: Cannot select start/end times
-- **Multiple outputs**: Cannot generate multiple sizes at once
-- **Subtitles**: Subtitle tracks are not preserved
-- **Multiple audio tracks**: Only primary audio track
-
-### Why These Limitations?
-
-These features would add significant complexity. ClipSqueeze focuses on doing one thing well: compressing a single video to a target size.
+CSqueeze focuses on doing one thing well: compressing a single video to a target size with an honest report.
 
 ---
 
-## Network/Offline
+## Network and Offline
 
-### Offline Support
+After the app loads, compression is fully local and no network requests are needed. The first visit requires internet to load the app. There is no service worker, so a full offline reload is not supported.
 
-After initial load, ClipSqueeze works offline. However:
-- First visit requires internet to load the app
-- No Service Worker for full offline support (yet)
-
-### No Upload Capability
-
-By design, there is no way to upload videos. All processing is local.
+No upload capability exists by design.
 
 ---
 
 ## Reporting Issues
 
-If you encounter a limitation not listed here:
-
-1. Check browser console for error messages
-2. Try with a different video file
-3. Try in Chrome (most tested browser)
-4. Report issue with:
-   - Browser version
-   - Video details (codec, resolution, duration)
-   - Error message (if any)
-   - Steps to reproduce
+1. Check the browser console (F12)
+2. Reproduce with a different video
+3. Try Chrome or Edge
+4. Report with browser version, OS, video details (container, codec, resolution, duration), error code, and steps

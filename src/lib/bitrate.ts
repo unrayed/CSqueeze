@@ -1,132 +1,396 @@
-import { ENCODING, RESOLUTION_STEPS } from './constants';
-import type { CompressionSettings, EncodingParams, VideoMetadata } from '../types';
+import {
+  AUTO_FPS_FALLBACK,
+  AUTO_RESOLUTION_CEILING,
+  ENCODING,
+  MIN_BITRATE_PER_HEIGHT,
+  RESOLUTION_LADDER,
+} from './constants';
+import { evenDimension } from './media';
+import type {
+  AudioKbps,
+  CompressionSettings,
+  FpsCap,
+  ResolutionCap,
+  Rotation,
+  VideoMetadata,
+} from '../types';
 
-/**
- * Calculate initial encoding parameters based on target size and video metadata
- */
-export function calculateEncodingParams(
-  metadata: VideoMetadata,
-  settings: CompressionSettings
-): EncodingParams {
-  const { duration, width, height, fps } = metadata;
-  const { targetSizeBytes, audioBitrate, muteAudio, targetResolution } = settings;
+const FIXED_CONTAINER_OVERHEAD_BYTES = 4096;
+const MONO_AUDIO_THRESHOLD = 64_000;
 
-  // Calculate output dimensions
-  let outputWidth = width;
-  let outputHeight = height;
-  
-  if (targetResolution && targetResolution > 0 && targetResolution < height) {
-    const scaled = calculateScaledDimensions(width, height, targetResolution);
-    outputWidth = scaled.width;
-    outputHeight = scaled.height;
-  }
-
-  // Calculate total available bitrate
-  const targetBits = targetSizeBytes * 8;
-  const totalBps = Math.floor(targetBits / duration);
-
-  // Reserve bits for audio (or 0 if muted)
-  const effectiveAudioBps = muteAudio ? 0 : audioBitrate;
-
-  // Apply safety margin and subtract audio
-  const videoBps = Math.floor((totalBps - effectiveAudioBps) * ENCODING.SAFETY_MARGIN);
-
-  return {
-    videoBitrate: Math.max(videoBps, ENCODING.MIN_VIDEO_BITRATE),
-    audioBitrate: effectiveAudioBps,
-    width: outputWidth,
-    height: outputHeight,
-    fps,
-    muteAudio,
-  };
+export interface ResolutionLevel {
+  width: number;
+  height: number;
+  sourceHeight: number;
 }
 
-/**
- * Calculate adjusted bitrate after an encoding attempt exceeded target
- */
-export function calculateRetryBitrate(
-  currentBitrate: number,
-  actualSize: number,
-  targetSize: number
-): number {
-  // Proportional adjustment: reduce bitrate based on how much we exceeded
-  const ratio = targetSize / actualSize;
-  const newBitrate = Math.floor(currentBitrate * ratio * ENCODING.RETRY_REDUCTION_FACTOR);
-  return Math.max(newBitrate, ENCODING.MIN_VIDEO_BITRATE);
+export interface AudioPlan {
+  bitrate: number;
+  channels: number;
 }
 
-/**
- * Check if current bitrate is too low for the given resolution
- */
-export function isBitrateTooLowForResolution(
-  bitrate: number,
-  height: number
-): boolean {
-  // Find the appropriate minimum bitrate threshold
-  const sortedHeights = Object.keys(ENCODING.MIN_BITRATE_PER_HEIGHT)
+export interface AttemptPlan {
+  width: number;
+  height: number;
+  fps: number;
+  videoBitrate: number;
+  audioBitrate: number;
+  audioChannels: number;
+  muteAudio: boolean;
+  levelIndex: number;
+}
+
+export interface EncodingPlan {
+  sourceWidth: number;
+  sourceHeight: number;
+  sourceFps: number;
+  rotation: Rotation;
+  durationSeconds: number;
+  tolerance: number;
+  passCount: number;
+  audio: AudioPlan;
+  levels: ResolutionLevel[];
+  initialLevelIndex: number;
+  initialFps: number;
+  initialVideoBitrate: number;
+  autoDownscale: boolean;
+  fpsMode: FpsCap;
+  resolutionMode: ResolutionCap;
+}
+
+export interface ResultClassification {
+  hitTarget: boolean;
+  overTarget: boolean;
+  withinTolerance: boolean;
+  targetDeltaRatio: number;
+}
+
+export function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
+
+export function minVideoBitrateForHeight(height: number): number {
+  const thresholds = Object.keys(MIN_BITRATE_PER_HEIGHT)
     .map(Number)
     .sort((a, b) => b - a);
 
-  for (const threshold of sortedHeights) {
+  for (const threshold of thresholds) {
     if (height >= threshold) {
-      const minBitrate = ENCODING.MIN_BITRATE_PER_HEIGHT[threshold];
-      if (minBitrate !== undefined) {
-        return bitrate < minBitrate * 0.5; // Allow 50% below recommended minimum
+      return MIN_BITRATE_PER_HEIGHT[threshold] ?? ENCODING.MIN_VIDEO_BITRATE;
+    }
+  }
+  return ENCODING.MIN_VIDEO_BITRATE;
+}
+
+export function estimateContainerOverheadBps(
+  totalBps: number,
+  durationSeconds: number
+): number {
+  const ratioOverhead = totalBps * ENCODING.CONTAINER_OVERHEAD_RATIO;
+  const fixedOverhead =
+    durationSeconds > 0
+      ? (FIXED_CONTAINER_OVERHEAD_BYTES * 8) / durationSeconds
+      : FIXED_CONTAINER_OVERHEAD_BYTES * 8;
+  return Math.max(ratioOverhead, fixedOverhead);
+}
+
+export function calculateVideoBitrate(
+  targetSizeBytes: number,
+  durationSeconds: number,
+  audioBitrate: number
+): number {
+  if (durationSeconds <= 0) return ENCODING.MIN_VIDEO_BITRATE;
+  const totalBps = (targetSizeBytes * 8) / durationSeconds;
+  const overheadBps = estimateContainerOverheadBps(totalBps, durationSeconds);
+  const videoBps = totalBps - audioBitrate - overheadBps;
+  return Math.max(Math.round(videoBps), ENCODING.MIN_VIDEO_BITRATE);
+}
+
+export function deriveAudioPlan(
+  settings: CompressionSettings,
+  durationSeconds: number,
+  hasAudio: boolean,
+  sourceChannels: number
+): AudioPlan {
+  if (!hasAudio || settings.muteAudio) {
+    return { bitrate: 0, channels: 0 };
+  }
+
+  const sourceChannelCount = Math.max(1, Math.round(sourceChannels || 1));
+  const totalBps =
+    durationSeconds > 0 ? (settings.targetSizeBytes * 8) / durationSeconds : ENCODING.MIN_VIDEO_BITRATE;
+
+  if (settings.audioKbps !== 'auto') {
+    const explicit = Number(settings.audioKbps) * 1000;
+    const bitrate = clamp(explicit, ENCODING.MIN_AUDIO_BITRATE, ENCODING.MAX_AUDIO_BITRATE);
+    return { bitrate, channels: sourceChannelCount };
+  }
+
+  const desired = totalBps * 0.1;
+  const tinyFloor = Math.min(ENCODING.MIN_AUDIO_BITRATE, Math.max(16_000, totalBps * 0.12));
+  const bitrate = Math.round(
+    clamp(desired, tinyFloor, ENCODING.AUTO_AUDIO_MAX_BITRATE)
+  );
+  const channels =
+    sourceChannelCount > 1 && bitrate < MONO_AUDIO_THRESHOLD ? 1 : sourceChannelCount;
+
+  return { bitrate, channels };
+}
+
+export function buildResolutionLevels(
+  width: number,
+  height: number,
+  resolution: ResolutionCap,
+  autoDownscale: boolean
+): ResolutionLevel[] {
+  const display = { width, height };
+  if (display.width <= 0 || display.height <= 0) return [];
+
+  let ceiling = display.height;
+  if (resolution === 'auto') {
+    ceiling = Math.min(display.height, AUTO_RESOLUTION_CEILING);
+  } else if (typeof resolution === 'number') {
+    ceiling = Math.min(display.height, resolution);
+  }
+
+  const initialHeight = Math.max(2, Math.round(ceiling));
+  const heights: number[] = [initialHeight];
+
+  if (autoDownscale && resolution !== 'source') {
+    for (const ladderHeight of RESOLUTION_LADDER) {
+      if (ladderHeight < initialHeight && ladderHeight <= display.height && !heights.includes(ladderHeight)) {
+        heights.push(ladderHeight);
       }
+    }
+    const sourceEven = evenDimension(display.height);
+    if (
+      resolution === 'auto' &&
+      sourceEven < initialHeight &&
+      sourceEven >= 240 &&
+      !heights.includes(sourceEven)
+    ) {
+      heights.splice(1, 0, sourceEven);
     }
   }
 
-  return bitrate < ENCODING.MIN_VIDEO_BITRATE;
+  return heights.map((targetHeight) => {
+    const target = scaleDisplayHeight(display.width, display.height, targetHeight);
+    return { width: target.width, height: target.height, sourceHeight: display.height };
+  });
 }
 
-/**
- * Get the next downscale resolution step
- */
-export function getNextResolutionStep(
-  currentHeight: number
-): { width: number; height: number } | null {
-  // Find current step index
-  const currentStepIndex = RESOLUTION_STEPS.findIndex(
-    (step) => currentHeight >= step.maxHeight
-  );
-
-  // Get next lower resolution
-  const nextIndex = currentStepIndex + 1;
-  if (nextIndex >= RESOLUTION_STEPS.length) {
-    return null; // Already at minimum resolution
-  }
-
-  const nextStep = RESOLUTION_STEPS[nextIndex];
-  if (!nextStep) return null;
-
+function scaleDisplayHeight(
+  width: number,
+  height: number,
+  targetHeight: number
+): { width: number; height: number } {
+  const scale = Math.min(1, targetHeight / height);
   return {
-    width: 0, // Will be calculated to maintain aspect ratio
-    height: nextStep.maxHeight,
+    width: evenDimension(width * scale),
+    height: evenDimension(height * scale),
   };
 }
 
-/**
- * Calculate dimensions maintaining aspect ratio
- */
+export function selectInitialLevelIndex(
+  levels: ResolutionLevel[],
+  videoBitrate: number
+): number {
+  if (levels.length === 0) return 0;
+  for (let index = 0; index < levels.length; index += 1) {
+    const level = levels[index];
+    if (!level) continue;
+    if (videoBitrate >= minVideoBitrateForHeight(level.height)) {
+      return index;
+    }
+  }
+  return levels.length - 1;
+}
+
+export function normalizeSourceFps(fps: number): number {
+  if (!Number.isFinite(fps) || fps <= 0) return AUTO_FPS_FALLBACK;
+  return clamp(fps, 1, 240);
+}
+
+export function deriveFps(cap: FpsCap, sourceFps: number): number {
+  const source = normalizeSourceFps(sourceFps);
+  if (cap === 'source' || cap === 'auto') return source;
+  return Math.min(source, cap);
+}
+
+export function reduceFpsForTarget(
+  cap: FpsCap,
+  currentFps: number,
+  sourceFps: number,
+  videoBitrate: number,
+  targetHeight: number
+): number {
+  if (cap !== 'auto') return currentFps;
+  const source = normalizeSourceFps(sourceFps);
+  if (currentFps <= AUTO_FPS_FALLBACK) return currentFps;
+  if (source <= AUTO_FPS_FALLBACK) return currentFps;
+  if (videoBitrate < minVideoBitrateForHeight(targetHeight)) {
+    return AUTO_FPS_FALLBACK;
+  }
+  return currentFps;
+}
+
+export function createEncodingPlan(
+  metadata: VideoMetadata,
+  settings: CompressionSettings,
+  maxPasses: number,
+  tolerance: number,
+  autoDownscale: boolean
+): EncodingPlan {
+  const durationSeconds = Math.max(metadata.duration, 0.001);
+  const sourceFps = normalizeSourceFps(metadata.fps);
+  const hasAudio = metadata.hasAudio && !settings.muteAudio;
+  const audio = deriveAudioPlan(settings, durationSeconds, hasAudio, metadata.audioChannels ?? 2);
+  const levels = buildResolutionLevels(
+    metadata.width,
+    metadata.height,
+    settings.resolution,
+    autoDownscale
+  );
+  const fallbackLevel: ResolutionLevel = {
+    width: evenDimension(metadata.width),
+    height: evenDimension(metadata.height),
+    sourceHeight: metadata.height,
+  };
+  const safeLevels = levels.length > 0 ? levels : [fallbackLevel];
+  const initialLevelIndex = selectInitialLevelIndex(
+    safeLevels,
+    calculateVideoBitrate(settings.targetSizeBytes, durationSeconds, audio.bitrate)
+  );
+  const initialLevel = safeLevels[initialLevelIndex] ?? fallbackLevel;
+  const initialVideoBitrate = calculateVideoBitrate(
+    settings.targetSizeBytes,
+    durationSeconds,
+    audio.bitrate
+  );
+  const baselineFps = deriveFps(settings.fps, sourceFps);
+  const initialFps = reduceFpsForTarget(
+    settings.fps,
+    baselineFps,
+    sourceFps,
+    initialVideoBitrate,
+    initialLevel.height
+  );
+
+  return {
+    sourceWidth: metadata.width,
+    sourceHeight: metadata.height,
+    sourceFps,
+    rotation: metadata.rotation,
+    durationSeconds,
+    tolerance,
+    passCount: maxPasses,
+    audio,
+    levels: safeLevels,
+    initialLevelIndex,
+    initialFps,
+    initialVideoBitrate,
+    autoDownscale,
+    fpsMode: settings.fps,
+    resolutionMode: settings.resolution,
+  };
+}
+
+export function createAttemptPlan(
+  plan: EncodingPlan,
+  levelIndex: number,
+  fps: number,
+  videoBitrate: number
+): AttemptPlan {
+  const level = plan.levels[levelIndex] ?? plan.levels[plan.levels.length - 1];
+  const width = level?.width ?? evenDimension(plan.sourceWidth);
+  const height = level?.height ?? evenDimension(plan.sourceHeight);
+
+  return {
+    width,
+    height,
+    fps,
+    videoBitrate: Math.max(ENCODING.MIN_VIDEO_BITRATE, Math.round(videoBitrate)),
+    audioBitrate: plan.audio.bitrate,
+    audioChannels: plan.audio.channels,
+    muteAudio: plan.audio.channels === 0,
+    levelIndex,
+  };
+}
+
+export function correctVideoBitrate(
+  currentBitrate: number,
+  actualBytes: number,
+  targetBytes: number,
+  durationSeconds: number
+): number {
+  if (durationSeconds <= 0) return currentBitrate;
+  const deltaBytes = targetBytes - actualBytes;
+  const deltaBps = (deltaBytes * 8) / durationSeconds;
+  const gain = deltaBytes > 0 ? 0.8 : 0.9;
+  return Math.max(
+    ENCODING.MIN_VIDEO_BITRATE,
+    Math.round(currentBitrate + deltaBps * gain)
+  );
+}
+
+export function classifyResult(
+  outputBytes: number,
+  targetBytes: number,
+  tolerance: number
+): ResultClassification {
+  const targetDeltaRatio =
+    targetBytes > 0 ? (outputBytes - targetBytes) / targetBytes : 0;
+  return {
+    hitTarget: outputBytes <= targetBytes,
+    overTarget: outputBytes > targetBytes,
+    withinTolerance: Math.abs(targetDeltaRatio) <= tolerance,
+    targetDeltaRatio,
+  };
+}
+
+export function shouldCorrectUp(
+  outputBytes: number,
+  targetBytes: number,
+  tolerance: number
+): boolean {
+  return outputBytes < targetBytes * (1 - 2 * tolerance);
+}
+
+export function nextLargerBitrate(
+  currentBitrate: number,
+  durationSeconds: number,
+  targetBytes: number,
+  outputBytes: number
+): number {
+  const deltaBps = ((targetBytes - outputBytes) * 8) / Math.max(durationSeconds, 0.001);
+  return Math.max(currentBitrate + 1, Math.round(currentBitrate + deltaBps));
+}
+
+export function resolveSettings(
+  settings: CompressionSettings,
+  defaults: { maxPasses: number; tolerance: number; autoDownscale: boolean }
+): { maxPasses: number; tolerance: number; autoDownscale: boolean } {
+  const maxPasses = clamp(
+    Math.round(settings.passesOverride ?? defaults.maxPasses),
+    1,
+    12
+  );
+  const tolerance = clamp(settings.toleranceOverride ?? defaults.tolerance, 0.001, 0.5);
+  return { maxPasses, tolerance, autoDownscale: defaults.autoDownscale };
+}
+
+export function audioKbpsToBps(value: AudioKbps): number {
+  return value === 'auto' ? 0 : Number(value) * 1000;
+}
+
 export function calculateScaledDimensions(
   originalWidth: number,
   originalHeight: number,
   targetHeight: number
 ): { width: number; height: number } {
-  const aspectRatio = originalWidth / originalHeight;
-  let newHeight = Math.min(targetHeight, originalHeight);
-  let newWidth = Math.round(newHeight * aspectRatio);
-
-  // Ensure dimensions are even (required for H.264)
-  newWidth = newWidth % 2 === 0 ? newWidth : newWidth - 1;
-  newHeight = newHeight % 2 === 0 ? newHeight : newHeight - 1;
-
-  return { width: newWidth, height: newHeight };
+  return scaleDisplayHeight(originalWidth, originalHeight, targetHeight);
 }
 
-/**
- * Estimate output size based on bitrate and duration
- */
 export function estimateOutputSize(
   videoBitrate: number,
   audioBitrate: number,
@@ -136,47 +400,25 @@ export function estimateOutputSize(
   return Math.ceil(totalBits / 8);
 }
 
-/**
- * Check if target size is achievable without downscaling
- */
+export function isBitrateTooLowForResolution(bitrate: number, height: number): boolean {
+  return bitrate < minVideoBitrateForHeight(height);
+}
+
 export function isTargetAchievableAtResolution(
   targetSizeBytes: number,
   durationSeconds: number,
   height: number,
   audioBitrate: number
 ): boolean {
-  const targetBits = targetSizeBytes * 8;
-  const totalBps = targetBits / durationSeconds;
-  const videoBps = totalBps - audioBitrate;
-
-  // Check against minimum quality bitrate for this resolution
-  const sortedHeights = Object.keys(ENCODING.MIN_BITRATE_PER_HEIGHT)
-    .map(Number)
-    .sort((a, b) => b - a);
-
-  for (const threshold of sortedHeights) {
-    if (height >= threshold) {
-      const minBitrate = ENCODING.MIN_BITRATE_PER_HEIGHT[threshold];
-      if (minBitrate !== undefined) {
-        return videoBps >= minBitrate * 0.3; // Allow very low quality
-      }
-    }
-  }
-
-  return videoBps >= ENCODING.MIN_VIDEO_BITRATE;
+  const videoBps = calculateVideoBitrate(targetSizeBytes, durationSeconds, audioBitrate);
+  return videoBps >= minVideoBitrateForHeight(height);
 }
 
-/**
- * Get suggested target size for a video
- */
 export function getSuggestedTargetSize(
   durationSeconds: number,
   height: number
 ): number {
-  // Base recommendation on duration and resolution
   const baseMultiplier = height >= 1080 ? 2 : height >= 720 ? 1.5 : 1;
   const mbPerMinute = 10 * baseMultiplier;
-  const minutes = durationSeconds / 60;
-
-  return Math.ceil(minutes * mbPerMinute * 1024 * 1024);
+  return Math.ceil((durationSeconds / 60) * mbPerMinute * 1024 * 1024);
 }

@@ -1,170 +1,134 @@
 # Sizing Algorithm
 
-This document explains how ClipSqueeze ensures output files are always under the target size.
+This document explains how CSqueeze targets a file size.
 
 ## The Challenge
 
-Video encoding is not perfectly predictable. The actual output size depends on:
-- Video content complexity (motion, detail, colors)
-- Scene changes and keyframe placement
-- Encoder behavior and optimizations
+Encoded size is not perfectly predictable. It depends on content complexity, keyframe placement, encoder behavior, and container overhead. A bitrate that produces 10.0 MB on one clip can produce 8.5 MB or 12.0 MB on another.
 
-Given a target bitrate, actual output size can vary by ±10% or more.
+## Iterative Encoding with Additive Correction
 
-## Our Solution: Iterative Encoding with Safety Margins
+### Step 1: Initial bitrate
 
-### Step 1: Initial Bitrate Calculation
-
-```typescript
-// Calculate total available bitrate from target size
-const targetBits = targetSizeBytes * 8;
-const totalBps = targetBits / durationSeconds;
-
-// Reserve space for audio
-const videoBps = (totalBps - audioBps) * SAFETY_MARGIN;
+```ts
+const totalBps = (targetBytes * 8) / durationSeconds;
+const overheadBps = max(totalBps * 0.02, (4096 * 8) / durationSeconds);
+const videoBps = max(totalBps - audioBps - overheadBps, 100_000);
 ```
 
-**Safety Margin**: We use 0.92 (8% buffer) to account for:
-- Container overhead (MP4 headers, metadata)
-- Encoding variance
-- Audio track overhead
+The explicit container-overhead estimate replaces the old flat 8% margin: 2% of the total plus a fixed 4 KiB allowance, whichever is larger.
 
-### Step 2: Encode and Measure
+Audio is planned first:
 
-After encoding, we check the actual output size:
+- explicit 64/96/128/192 kbps is clamped to 48–192 kbps
+- `auto` uses about 10% of the total budget, clamped to 48–160 kbps
+- very small targets may use a floor below 48 kbps
+- stereo is downmixed to mono when the derived bitrate is under 64 kbps
 
-```typescript
-if (outputBlob.size <= targetSizeBytes) {
-  // Success! Output is under target
-  return outputBlob;
-} else {
-  // Too large, need to retry
-  retryWithLowerBitrate();
-}
+### Step 2: Choose the starting resolution and fps
+
+The resolution ladder is built from the source display height and the selected cap:
+
+- `auto`: source height capped at 1080p, then 720 → 480 → 360 → 240
+- `source`: source height only
+- numeric caps: 1080/720/480/360/240, never exceeded
+
+The initial level is the largest level whose minimum bitrate fits the planned video bitrate. When the preset disables auto downscale (Fast), the cap/source level is used directly.
+
+Frame rate starts at the source fps (or a numeric cap). It only drops to 30 when the resolution ladder is exhausted and the result is still over target, and only for the `auto` policy.
+
+### Step 3: Encode, mux, measure
+
+Each attempt decodes the retained samples, encodes video at the planned bitrate, reuses the audio chunks encoded once for the job, and muxes a fresh MP4. The muxed byte length is the measurement.
+
+Classification:
+
+```ts
+hitTarget      = outputBytes <= targetBytes
+overTarget     = outputBytes >  targetBytes
+withinTolerance = abs(outputBytes - targetBytes) / targetBytes <= tolerance
+targetDeltaRatio = (outputBytes - targetBytes) / targetBytes
 ```
 
-### Step 3: Proportional Retry
+The loop stops when the result is within tolerance or the pass budget is exhausted.
 
-When output exceeds target, we calculate a new bitrate proportionally:
+### Step 4: Correct according to the measured gap
 
-```typescript
-const ratio = targetSizeBytes / actualOutputSize;
-const newBitrate = currentBitrate * ratio * RETRY_REDUCTION_FACTOR;
+Correction is additive, not a blind ratio:
+
+```ts
+deltaBps = ((targetBytes - actualBytes) * 8) / durationSeconds;
+gain = deltaBytes > 0 ? 0.8 : 0.9;
+nextBitrate = max(100_000, currentBitrate + deltaBps * gain);
 ```
 
-**Retry Reduction Factor**: We use 0.95 to ensure we definitely get under target on retry, not just barely at the limit.
+This both shrinks overshoots and raises bitrate when the encoder undershot, so a far-under-target result is retried upward for quality instead of being accepted as "small enough".
 
-### Example Calculation
+If the corrected bitrate would fall below the minimum for the current height and auto downscale is enabled, the next attempt moves down the ladder. If the lowest level is already in use and the result is still over target, the frame rate drops to 30 when allowed.
 
-**Scenario:**
-- Target size: 10 MB (10,485,760 bytes)
-- Duration: 60 seconds
-- Audio: 96 kbps
+If neither the bitrate, level, nor fps would change, the loop nudges the bitrate by 3% down (over target) or 5% up (under target) to avoid an identical retry.
 
-**Initial calculation:**
+### Pass budgets and tolerances
+
+| Preset | Passes | Tolerance | Auto downscale |
+| --- | --- | --- | --- |
+| Fast | 2 | ±5% | No |
+| Balanced | 4 | ±2% | Yes |
+| Best | 6 | ±1% | Yes |
+
+**Retry finer** uses `toleranceOverride = presetTolerance / 2` and `passesOverride = presetPasses + 2` (clamped to 12 passes and a 0.1% minimum tolerance).
+
+### Minimum video bitrate per height
+
+| Height | Minimum |
+| --- | --- |
+| 1080 | 1.6 Mbps |
+| 720 | 850 kbps |
+| 480 | 420 kbps |
+| 360 | 200 kbps |
+| 240 | 110 kbps |
+| below 240 | 100 kbps absolute floor |
+
+These values drive the ladder, not a hard output ceiling: the absolute video floor is 100 kbps.
+
+### Example
+
+Target 10 MB, duration 60 s, AAC 96 kbps:
+
 ```
-Total bitrate = (10,485,760 × 8) / 60 = 1,397,435 bps ≈ 1.4 Mbps
-Video bitrate = (1,397,435 - 96,000) × 0.92 = 1,197,321 bps ≈ 1.2 Mbps
+totalBps    = 10,485,760 * 8 / 60 = 1,398,101
+overheadBps = max(27,962, 546)     = 27,962
+videoBps    = 1,398,101 - 96,000 - 27,962 = 1,274,139
 ```
 
-**After first encode:**
-- Actual output: 11.2 MB (too large by 12%)
+If the first mux lands at 11.0 MB (1,048,576 bytes over target), the correction adds roughly:
 
-**Retry calculation:**
 ```
-Ratio = 10 / 11.2 = 0.893
-New bitrate = 1,197,321 × 0.893 × 0.95 = 1,015,168 bps ≈ 1.0 Mbps
+deltaBps = 1,048,576 * 8 / 60 = 139,810
+next     = 1,274,139 - 139,810 * 0.9 = 1,148,310
 ```
 
-**Second attempt:**
-- Actual output: 9.6 MB ✓ (under target)
+The next attempt encodes at about 1.15 Mbps. If that falls below the ladder threshold for the current height, CSqueeze drops a resolution step instead of crushing quality at the same size.
 
-## Resolution and FPS Fallbacks
+## Target Already Met
 
-Sometimes the bitrate becomes too low to produce acceptable quality at the current resolution. When this happens:
-
-### Resolution Downscaling
-
-If enabled by user (`allowDownscale`), we reduce resolution in steps:
-1. 1080p → 720p
-2. 720p → 480p
-3. 480p → 360p
-
-Lower resolution allows higher relative bitrate = better quality per pixel.
-
-### FPS Reduction
-
-If enabled by user (`allowFpsReduction`), we reduce frame rate:
-1. 30 fps → 24 fps
-2. 24 fps → 20 fps
-3. 20 fps → 15 fps
-
-Fewer frames = more bits per frame = higher quality per frame.
-
-### When to Apply
-
-These fallbacks are **last resort** and only used when:
-1. User has enabled the option
-2. Bitrate would be too low for acceptable quality at current settings
-3. Bitrate-only retries have been exhausted
-
-The minimum acceptable bitrate per resolution:
-- 1080p: 2 Mbps (50% threshold: 1 Mbps)
-- 720p: 1 Mbps (50% threshold: 500 kbps)
-- 480p: 500 kbps (50% threshold: 250 kbps)
-- 360p: 250 kbps (50% threshold: 125 kbps)
-
-## Maximum Attempts
-
-We limit retries to prevent infinite loops:
-- **4 attempts maximum** at each resolution/FPS combination
-- Typically succeeds in 1-2 attempts
-- 3+ attempts indicates target is very aggressive for the content
+If `targetBytes >= sourceFileBytes`, the worker skips encoding entirely, returns the original bytes, and marks the report `skipped: true`. The UI labels the download as the original file and keeps its real container type.
 
 ## Failure Handling
 
-If we cannot achieve the target after all attempts:
+The worker always returns the best completed attempt when one exists, even if it missed the target. The report carries `hitTarget`, `overTarget`, `withinTolerance`, and `targetDeltaRatio`; the UI shows an amber over-target state with **Retry finer**. There is no silent "close enough" success at 5%.
 
-1. **Close but acceptable** (within 5% over): Accept and notify user
-2. **Significantly over**: Show error with suggestions:
-   - Enable downscaling
-   - Enable FPS reduction
-   - Increase target size
-   - Reduce audio bitrate
-   - Mute audio
+Encoding/decoding/muxing failures are returned as structured errors with a code and suggestion. Common causes:
 
-## Quality Hints
+- container outside MP4/MOV/M4V
+- source codec the browser cannot decode
+- AAC encoder unavailable (for example Chrome on Linux)
+- target too small for the audio budget plus the 100 kbps video floor
 
-The UI shows quality hints based on estimated bitrate:
+## Tips
 
-| Bitrate (1080p) | Quality Level |
-|-----------------|---------------|
-| ≥ 8 Mbps | Excellent |
-| ≥ 4 Mbps | Good |
-| ≥ 2 Mbps | Acceptable |
-| ≥ 1 Mbps | Low |
-| < 1 Mbps | Very Low |
-
-These thresholds scale with resolution (720p needs ~60% of 1080p bitrate for equivalent quality).
-
-## Constants Reference
-
-```typescript
-const ENCODING = {
-  SAFETY_MARGIN: 0.92,           // Initial bitrate safety buffer
-  MAX_ATTEMPTS: 4,               // Max encoding attempts
-  MIN_VIDEO_BITRATE: 100_000,    // Absolute minimum bitrate (100 kbps)
-  RETRY_REDUCTION_FACTOR: 0.95,  // Additional reduction on retry
-  KEYFRAME_INTERVAL: 2,          // Seconds between keyframes
-};
-```
-
-## Tips for Users
-
-1. **Longer videos need larger targets** - A 5-minute video at 8MB is much more compressed than a 30-second video at 8MB
-
-2. **Enable downscaling for small targets** - 720p at good quality often looks better than 1080p at very low quality
-
-3. **Consider muting audio** - Audio at 96kbps takes ~720KB per minute. For very small targets, muting saves significant space
-
-4. **Check the quality hint** - If it shows "Very Low", consider increasing your target size
+1. Longer videos need larger targets.
+2. Balanced/Best engage the resolution ladder, which usually beats squeezing 1080p into a tiny bitrate.
+3. Mute audio when the target is tight or when AAC encoding is unavailable.
+4. Use Fast when you want to keep source resolution and accept a looser fit.
+5. Check the report: resolution, fps, audio, and pass count explain what the encoder did.

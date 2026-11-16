@@ -4,7 +4,7 @@ const trustItems = [
   { text: 'Files never leave your device', icon: Lock },
   { text: 'No watermarks', icon: BadgeCheck },
   { text: 'Encoded with WebCodecs', icon: Zap },
-  { text: 'Chrome, Edge and Brave', icon: Globe },
+  { text: 'Chrome, Edge, Brave, Opera', icon: Globe },
 ];
 
 export function TrustStrip() {

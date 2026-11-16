@@ -12,31 +12,31 @@ const features = [
     icon: Target,
     title: 'Hit your target size',
     description:
-      'Need 10 MB for Discord or 25 MB for email? Set the limit and the encoder works to it, lowering the bitrate when a pass comes in over.',
+      'Need 8 MB for Discord or 25 MB for email? Set the limit and the encoder works to it within the selected pass budget, then warns when it cannot get there.',
   },
   {
     icon: Sliders,
     title: 'Automatic quality control',
     description:
-      'The encoder finds the balance between size and quality. Open advanced settings when you want to choose the resolution or audio bitrate yourself.',
+      'The quality preset decides how many passes the encoder spends. Open advanced settings to cap resolution, frame rate, or audio yourself.',
   },
   {
     icon: Download,
     title: 'One-click download',
     description:
-      'No account, no sign-up, no email. Compress and download the MP4 as soon as it is ready.',
+      'No account, no sign-up, no email. Download the MP4 as soon as it is ready.',
   },
   {
     icon: Eye,
-    title: 'Preview before download',
+    title: 'Compare before download',
     description:
-      'Watch the result in the browser first, then keep it if it looks right.',
+      'Watch the original and compressed video side by side, then keep the result if it looks right.',
   },
   {
     icon: Wifi,
-    title: 'Works offline',
+    title: 'Works offline after load',
     description:
-      'Once the page is loaded, the compressor runs without a network connection. Your video stays local.',
+      'After the page loads, the compressor runs without a network connection. Your video stays local.',
   },
 ];
 

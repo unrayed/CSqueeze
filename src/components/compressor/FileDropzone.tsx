@@ -1,15 +1,25 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, Film, Lock } from 'lucide-react';
-import { cn } from '../../lib/utils';
+import { Upload, Film, Lock, AlertCircle } from 'lucide-react';
+import { cn, formatBytes } from '../../lib/utils';
+import { FILE_LIMITS } from '../../lib/constants';
 
 interface FileDropzoneProps {
   onFileSelect: (file: File) => void;
 }
 
+const ACCEPTED_TYPES = {
+  'video/mp4': ['.mp4'],
+  'video/quicktime': ['.mov'],
+  'video/x-m4v': ['.m4v'],
+};
+
 export function FileDropzone({ onFileSelect }: FileDropzoneProps) {
+  const [rejectMessage, setRejectMessage] = useState<string | null>(null);
+
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
+      setRejectMessage(null);
       const file = acceptedFiles[0];
       if (file) {
         onFileSelect(file);
@@ -20,78 +30,110 @@ export function FileDropzone({ onFileSelect }: FileDropzoneProps) {
 
   const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
     onDrop,
-    accept: {
-      'video/*': ['.mp4', '.webm', '.mov', '.avi', '.mkv', '.m4v'],
+    onDropRejected: (fileRejections) => {
+      const first = fileRejections[0];
+      if (!first) return;
+
+      if (first.errors.some((error) => error.code === 'file-too-large')) {
+        setRejectMessage(
+          `That file is larger than ${formatBytes(FILE_LIMITS.MAX_FILE_SIZE, 0)}.`
+        );
+        return;
+      }
+
+      if (first.errors.some((error) => error.code === 'too-many-files')) {
+        setRejectMessage('Add one video at a time.');
+        return;
+      }
+
+      setRejectMessage(
+        'That container is not supported. Use an MP4, MOV, or M4V file.'
+      );
     },
+    accept: ACCEPTED_TYPES,
     maxFiles: 1,
     multiple: false,
+    maxSize: FILE_LIMITS.MAX_FILE_SIZE,
   });
 
   return (
-    <div
-      {...getRootProps()}
-      className={cn(
-        'cursor-pointer rounded-xl border border-dashed p-8 text-center',
-        'transition-colors duration-150 ease-out',
-        'border-mist-300 bg-white hover:border-primary-600 hover:bg-primary-50/40',
-        'dark:border-mist-700 dark:bg-mist-900 dark:hover:border-primary-400 dark:hover:bg-primary-900/10',
-        isDragActive &&
-          !isDragReject &&
-          'border-primary-600 bg-primary-50/60 dark:border-primary-400 dark:bg-primary-900/20',
-        isDragReject &&
-          'border-red-500 bg-red-50 dark:border-red-500 dark:bg-red-950/30'
-      )}
-    >
-      <input {...getInputProps()} />
-
-      <div className="flex flex-col items-center">
-        <div
-          className={cn(
-            'flex h-10 w-10 items-center justify-center rounded-lg border',
-            'border-mist-200 bg-mist-50 text-mist-500 dark:border-mist-700 dark:bg-mist-800 dark:text-mist-400',
-            isDragActive &&
-              !isDragReject &&
-              'border-primary-200 bg-primary-100 text-primary-700 dark:border-primary-800 dark:bg-primary-900/40 dark:text-primary-300',
-            isDragReject &&
-              'border-red-200 bg-red-100 text-red-700 dark:border-red-900 dark:bg-red-900/40 dark:text-red-300'
-          )}
-        >
-          {isDragReject ? (
-            <Film className="h-4 w-4" strokeWidth={1.5} />
-          ) : (
-            <Upload className="h-4 w-4" strokeWidth={1.5} />
-          )}
-        </div>
-
-        {isDragReject ? (
-          <p className="mt-5 text-base font-medium text-red-700 dark:text-red-300">
-            Video files only
-          </p>
-        ) : isDragActive ? (
-          <p className="mt-5 text-base font-medium text-primary-700 dark:text-primary-300">
-            Drop to add the file
-          </p>
-        ) : (
-          <>
-            <p className="mt-5 text-base font-medium">Drop your video here</p>
-            <p className="mt-1 text-sm text-mist-500 dark:text-mist-400">
-              or{' '}
-              <span className="font-medium text-primary-700 underline decoration-primary-300 underline-offset-2 dark:text-primary-300 dark:decoration-primary-700">
-                browse files
-              </span>
-            </p>
-          </>
+    <div>
+      <div
+        {...getRootProps()}
+        className={cn(
+          'cursor-pointer rounded-xl border border-dashed p-8 text-center',
+          'transition-colors duration-150 ease-out',
+          'border-mist-300 bg-white hover:border-primary-600 hover:bg-primary-50/40',
+          'dark:border-mist-700 dark:bg-mist-900 dark:hover:border-primary-400 dark:hover:bg-primary-900/10',
+          isDragActive &&
+            !isDragReject &&
+            'border-primary-600 bg-primary-50/60 dark:border-primary-400 dark:bg-primary-900/20',
+          isDragReject &&
+            'border-red-500 bg-red-50 dark:border-red-500 dark:bg-red-950/30'
         )}
+      >
+        <input {...getInputProps()} />
 
-        <p className="mono mt-5 text-xs text-mist-500 dark:text-mist-400">
-          MP4 &middot; MOV &middot; WebM &middot; MKV &middot; AVI
-        </p>
+        <div className="flex flex-col items-center">
+          <div
+            className={cn(
+              'flex h-10 w-10 items-center justify-center rounded-lg border',
+              'border-mist-200 bg-mist-50 text-mist-500 dark:border-mist-700 dark:bg-mist-800 dark:text-mist-400',
+              isDragActive &&
+                !isDragReject &&
+                'border-primary-200 bg-primary-100 text-primary-700 dark:border-primary-800 dark:bg-primary-900/40 dark:text-primary-300',
+              isDragReject &&
+                'border-red-200 bg-red-100 text-red-700 dark:border-red-900 dark:bg-red-900/40 dark:text-red-300'
+            )}
+          >
+            {isDragReject ? (
+              <Film className="h-4 w-4" strokeWidth={1.5} />
+            ) : (
+              <Upload className="h-4 w-4" strokeWidth={1.5} />
+            )}
+          </div>
 
-        <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-mist-500 dark:text-mist-400">
-          <Lock className="h-4 w-4" strokeWidth={1.5} />
-          Your video stays on your device
-        </p>
+          {isDragReject ? (
+            <p className="mt-5 text-base font-medium text-red-700 dark:text-red-300">
+              Unsupported container
+            </p>
+          ) : isDragActive ? (
+            <p className="mt-5 text-base font-medium text-primary-700 dark:text-primary-300">
+              Drop to add the file
+            </p>
+          ) : (
+            <>
+              <p className="mt-5 text-base font-medium">Drop your video here</p>
+              <p className="mt-1 text-sm text-mist-500 dark:text-mist-400">
+                or{' '}
+                <span className="font-medium text-primary-700 underline decoration-primary-300 underline-offset-2 dark:text-primary-300 dark:decoration-primary-700">
+                  browse files
+                </span>
+              </p>
+            </>
+          )}
+
+          <p className="mono mt-5 text-xs text-mist-500 dark:text-mist-400">
+            MP4 &middot; MOV &middot; M4V
+          </p>
+
+          <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-mist-500 dark:text-mist-400">
+            <Lock className="h-4 w-4" strokeWidth={1.5} />
+            Your video stays on your device
+          </p>
+        </div>
       </div>
+
+      {rejectMessage && !isDragReject && (
+        <p
+          role="alert"
+          aria-live="polite"
+          className="mt-3 flex items-start gap-2 text-xs leading-5 text-red-700 dark:text-red-300"
+        >
+          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
+          <span>{rejectMessage}</span>
+        </p>
+      )}
     </div>
   );
 }

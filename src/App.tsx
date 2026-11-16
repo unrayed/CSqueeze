@@ -31,8 +31,9 @@ function App() {
                 Compress a video
               </h2>
               <p className="mt-4 text-base leading-7 text-mist-600 dark:text-mist-300">
-                Pick a target size. The encoder retries until the file fits, and
-                nothing leaves this tab.
+                Pick a target size. The encoder retries within a pass budget and
+                tells you when the target is out of reach. Nothing leaves this
+                tab.
               </p>
             </div>
             <div className="mt-10">
