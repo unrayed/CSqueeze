@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Upload, Film, Sparkles } from 'lucide-react';
+import { Upload, Film, Lock } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 interface FileDropzoneProps {
@@ -31,73 +31,66 @@ export function FileDropzone({ onFileSelect }: FileDropzoneProps) {
     <div
       {...getRootProps()}
       className={cn(
-        'relative cursor-pointer rounded-3xl border-3 border-dashed p-8 text-center transition-all duration-300 sm:p-12',
-        'hover:border-primary-400 hover:bg-primary-50/50 dark:hover:bg-primary-900/10',
-        isDragActive && !isDragReject && 'border-primary-500 bg-primary-50 scale-[1.02] dark:bg-primary-900/20',
-        isDragReject && 'border-red-500 bg-red-50 dark:bg-red-900/20',
-        !isDragActive && 'border-gray-300 bg-gray-50/50 dark:border-gray-700 dark:bg-gray-800/50'
+        'cursor-pointer rounded-xl border border-dashed p-8 text-center',
+        'transition-colors duration-150 ease-out',
+        'border-mist-300 bg-white hover:border-primary-600 hover:bg-primary-50/40',
+        'dark:border-mist-700 dark:bg-mist-900 dark:hover:border-primary-400 dark:hover:bg-primary-900/10',
+        isDragActive &&
+          !isDragReject &&
+          'border-primary-600 bg-primary-50/60 dark:border-primary-400 dark:bg-primary-900/20',
+        isDragReject &&
+          'border-red-500 bg-red-50 dark:border-red-500 dark:bg-red-950/30'
       )}
     >
       <input {...getInputProps()} />
 
       <div className="flex flex-col items-center">
-        {/* Animated icon */}
         <div
           className={cn(
-            'mb-6 flex h-16 w-16 items-center justify-center rounded-3xl transition-all duration-300 sm:h-20 sm:w-20',
-            isDragActive && !isDragReject
-              ? 'bg-primary-100 text-primary-600 scale-110 dark:bg-primary-900/50 dark:text-primary-400'
-              : isDragReject
-                ? 'bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-400'
-                : 'bg-primary-100 text-primary-600 dark:bg-primary-900/50 dark:text-primary-400'
+            'flex h-10 w-10 items-center justify-center rounded-lg border',
+            'border-mist-200 bg-mist-50 text-mist-500 dark:border-mist-700 dark:bg-mist-800 dark:text-mist-400',
+            isDragActive &&
+              !isDragReject &&
+              'border-primary-200 bg-primary-100 text-primary-700 dark:border-primary-800 dark:bg-primary-900/40 dark:text-primary-300',
+            isDragReject &&
+              'border-red-200 bg-red-100 text-red-700 dark:border-red-900 dark:bg-red-900/40 dark:text-red-300'
           )}
         >
           {isDragReject ? (
-            <Film className="h-10 w-10" />
-          ) : isDragActive ? (
-            <Sparkles className="h-10 w-10 animate-pulse" />
+            <Film className="h-4 w-4" strokeWidth={1.5} />
           ) : (
-            <Upload className="h-10 w-10" />
+            <Upload className="h-4 w-4" strokeWidth={1.5} />
           )}
         </div>
 
-        {/* Text */}
         {isDragReject ? (
-          <p className="text-lg font-bold text-red-600 dark:text-red-400 sm:text-xl">
-            Oops! Video files only 🎬
+          <p className="mt-5 text-base font-medium text-red-700 dark:text-red-300">
+            Video files only
           </p>
         ) : isDragActive ? (
-          <p className="text-lg font-bold text-primary-600 dark:text-primary-400 sm:text-xl">
-            Drop it like it's hot! 🔥
+          <p className="mt-5 text-base font-medium text-primary-700 dark:text-primary-300">
+            Drop to add the file
           </p>
         ) : (
           <>
-            <p className="text-lg font-bold sm:text-xl">
-              Drag & drop your video here
-            </p>
-            <p className="mt-2 text-gray-500 dark:text-gray-400">
-              or <span className="font-semibold text-primary-600 dark:text-primary-400">browse</span> to choose a file
+            <p className="mt-5 text-base font-medium">Drop your video here</p>
+            <p className="mt-1 text-sm text-mist-500 dark:text-mist-400">
+              or{' '}
+              <span className="font-medium text-primary-700 underline decoration-primary-300 underline-offset-2 dark:text-primary-300 dark:decoration-primary-700">
+                browse files
+              </span>
             </p>
           </>
         )}
 
-        {/* Supported formats */}
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
-          {['MP4', 'MOV', 'WebM', 'MKV', 'AVI'].map((format) => (
-            <span
-              key={format}
-              className="rounded-full bg-gray-200 px-3 py-1 text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-400"
-            >
-              {format}
-            </span>
-          ))}
-        </div>
+        <p className="mono mt-5 text-xs text-mist-500 dark:text-mist-400">
+          MP4 &middot; MOV &middot; WebM &middot; MKV &middot; AVI
+        </p>
 
-        {/* Privacy note */}
-        <div className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary-100 px-4 py-2 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-400 sm:text-sm">
-          <span>🔒</span>
-          Your video stays on your device - we can't see it!
-        </div>
+        <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-mist-500 dark:text-mist-400">
+          <Lock className="h-4 w-4" strokeWidth={1.5} />
+          Your video stays on your device
+        </p>
       </div>
     </div>
   );

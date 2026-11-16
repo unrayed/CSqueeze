@@ -1,45 +1,27 @@
-// Icons replaced with emojis for playful feel
-import { motion } from 'framer-motion';
+import { Lock, BadgeCheck, Zap, Globe } from 'lucide-react';
 
 const trustItems = [
-  {
-    text: 'Your videos never leave your device',
-    emoji: '🔐',
-  },
-  {
-    text: 'No watermarks, ever',
-    emoji: '🎁',
-  },
-  {
-    text: 'Lightning-fast processing',
-    emoji: '⚡',
-  },
-  {
-    text: 'Works in Chrome, Edge & Brave',
-    emoji: '🌐',
-  },
+  { text: 'Files never leave your device', icon: Lock },
+  { text: 'No watermarks', icon: BadgeCheck },
+  { text: 'Encoded with WebCodecs', icon: Zap },
+  { text: 'Chrome, Edge and Brave', icon: Globe },
 ];
 
 export function TrustStrip() {
   return (
-    <section className="border-y border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900">
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4"
-        >
-          {trustItems.map(({ text, emoji }) => (
+    <section className="border-b border-mist-200 bg-white dark:border-mist-800 dark:bg-mist-900">
+      <div className="container-page">
+        <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3 py-5">
+          {trustItems.map(({ text, icon: Icon }) => (
             <div
               key={text}
-              className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300"
+              className="flex items-center gap-2 text-sm text-mist-600 dark:text-mist-300"
             >
-              <span className="text-lg">{emoji}</span>
+              <Icon className="h-4 w-4 text-mist-500 dark:text-mist-400" strokeWidth={1.5} />
               <span>{text}</span>
             </div>
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );

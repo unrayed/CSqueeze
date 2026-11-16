@@ -5,6 +5,19 @@ export default {
   theme: {
     extend: {
       colors: {
+        mist: {
+          50: '#f5f6f2',
+          100: '#eaede5',
+          200: '#d9e1d3',
+          300: '#bcc8b7',
+          400: '#8d9a8d',
+          500: '#647065',
+          600: '#4b574d',
+          700: '#35413a',
+          800: '#1d2822',
+          900: '#121a16',
+          950: '#0b1210',
+        },
         primary: {
           50: '#f6fbe3',
           100: '#ecf6c1',
@@ -18,57 +31,26 @@ export default {
           900: '#234726',
           950: '#142a16',
         },
-        accent: {
-          50: '#f0fdfa',
-          100: '#ccfbf1',
-          200: '#99f6e4',
-          300: '#5eead4',
-          400: '#2dd4bf',
-          500: '#14b8a6',
-          600: '#0d9488',
-          700: '#0f766e',
-          800: '#115e59',
-          900: '#134e4a',
-          950: '#042f2e',
-        },
-        warm: {
-          50: '#fffbeb',
-          100: '#fef3c7',
-          200: '#fde68a',
-          300: '#fcd34d',
-          400: '#fbbf24',
-          500: '#f59e0b',
-          600: '#d97706',
-          700: '#b45309',
-          800: '#92400e',
-          900: '#78350f',
-        },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['"IBM Plex Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['"IBM Plex Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
       },
-      borderRadius: {
-        '4xl': '2rem',
+      transitionTimingFunction: {
+        out: 'cubic-bezier(0.22, 1, 0.36, 1)',
       },
       animation: {
-        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        shimmer: 'shimmer 2s linear infinite',
-        'bounce-slow': 'bounce 2s infinite',
-        wiggle: 'wiggle 1s ease-in-out infinite',
-        float: 'float 3s ease-in-out infinite',
+        'accordion-down': 'accordion-down 220ms cubic-bezier(0.22, 1, 0.36, 1)',
+        'accordion-up': 'accordion-up 220ms cubic-bezier(0.22, 1, 0.36, 1)',
       },
       keyframes: {
-        shimmer: {
-          '0%': { backgroundPosition: '-200% 0' },
-          '100%': { backgroundPosition: '200% 0' },
+        'accordion-down': {
+          from: { height: '0' },
+          to: { height: 'var(--radix-accordion-content-height)' },
         },
-        wiggle: {
-          '0%, 100%': { transform: 'rotate(-3deg)' },
-          '50%': { transform: 'rotate(3deg)' },
-        },
-        float: {
-          '0%, 100%': { transform: 'translateY(0)' },
-          '50%': { transform: 'translateY(-10px)' },
+        'accordion-up': {
+          from: { height: 'var(--radix-accordion-content-height)' },
+          to: { height: '0' },
         },
       },
     },

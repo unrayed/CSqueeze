@@ -1,50 +1,65 @@
-import { Heart, Github } from 'lucide-react';
+import { Github, Lock, Globe, Code2 } from 'lucide-react';
+
+const navLinks = [
+  { href: '#features', label: 'Features' },
+  { href: '#how-it-works', label: 'How it works' },
+  { href: '#compressor', label: 'Compressor' },
+  { href: '#faq', label: 'FAQ' },
+];
+
+const trustItems = [
+  {
+    icon: Lock,
+    title: '100% private',
+    description: 'Videos never leave your device',
+  },
+  {
+    icon: Globe,
+    title: 'Browser-based',
+    description: 'Works in Chrome, Edge and Brave',
+  },
+  {
+    icon: Code2,
+    title: 'Open source',
+    description: 'Transparent and community-driven',
+  },
+];
 
 export function Footer() {
   return (
-    <footer className="border-t border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900">
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
+    <footer className="border-t border-mist-200 bg-mist-50 dark:border-mist-800 dark:bg-mist-950">
+      <div className="mx-auto max-w-7xl px-6 py-12 lg:px-8 lg:py-16">
         <div className="grid gap-12 md:grid-cols-4">
-          {/* Brand */}
           <div className="md:col-span-2">
-            <a href="#" className="flex items-center gap-2">
-              <img src="/CSqueeze.png" alt="ClipSqueeze" className="h-10 w-10" />
-              <span className="text-xl font-extrabold">
-                Clip<span className="text-primary-600 dark:text-primary-400">Squeeze</span>
-              </span>
+            <a href="#" className="flex items-center gap-2.5">
+              <img src="/CSqueeze.png" alt="" className="h-8 w-8" />
+              <span className="text-base font-medium tracking-tight">CSqueeze</span>
             </a>
-            <p className="mt-4 max-w-md text-gray-600 dark:text-gray-400">
-              Free, private video compression right in your browser. No uploads, no accounts, no nonsense. 
-              Just squeeze your videos to the perfect size! 🍋
+            <p className="mt-4 max-w-md text-sm leading-6 text-mist-600 dark:text-mist-300">
+              Free, private video compression in your browser. No uploads, no
+              accounts, no watermark. Set a target size and keep the result.
             </p>
-            <div className="mt-6 flex gap-4">
-              <a
-                href="https://github.com/unrayed/CSqueeze"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-200 text-gray-600 transition-colors hover:bg-gray-300 hover:text-gray-900 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-100"
-              >
-                <Github className="h-5 w-5" />
-              </a>
-            </div>
+            <a
+              href="https://github.com/unrayed/CSqueeze"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-6 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-mist-200 text-mist-500 transition-colors duration-150 ease-out hover:bg-mist-100 hover:text-mist-900 dark:border-mist-800 dark:text-mist-400 dark:hover:bg-mist-900 dark:hover:text-mist-50"
+              aria-label="CSqueeze on GitHub"
+            >
+              <Github className="h-4 w-4" strokeWidth={1.5} />
+            </a>
           </div>
 
-          {/* Quick Links */}
           <div>
-            <h3 className="mb-4 text-sm font-bold uppercase tracking-wide text-gray-900 dark:text-gray-100">
-              Quick Links
+            <h3 className="text-sm font-medium text-mist-900 dark:text-mist-50">
+              Links
             </h3>
-            <ul className="space-y-3">
-              {[
-                { href: '#features', label: 'Features' },
-                { href: '#how-it-works', label: 'How it works' },
-                { href: '#compressor', label: 'Compressor' },
-                { href: '#faq', label: 'FAQ' },
-              ].map((link) => (
+            <ul className="mt-4 space-y-2.5">
+              {navLinks.map((link) => (
                 <li key={link.href}>
                   <a
                     href={link.href}
-                    className="text-gray-600 transition-colors hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400"
+                    className="text-sm text-mist-600 transition-colors duration-150 ease-out hover:text-primary-700 dark:text-mist-300 dark:hover:text-primary-300"
                   >
                     {link.label}
                   </a>
@@ -53,44 +68,35 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Trust & Privacy */}
           <div>
-            <h3 className="mb-4 text-sm font-bold uppercase tracking-wide text-gray-900 dark:text-gray-100">
-              Trust & Privacy
+            <h3 className="text-sm font-medium text-mist-900 dark:text-mist-50">
+              Trust and privacy
             </h3>
-            <div className="space-y-4 text-sm text-gray-600 dark:text-gray-400">
-              <div className="flex items-start gap-2">
-                <span className="text-lg">🔒</span>
-                <p>
-                  <strong className="text-gray-900 dark:text-gray-100">100% Private</strong><br />
-                  Videos never leave your device
-                </p>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-lg">🌐</span>
-                <p>
-                  <strong className="text-gray-900 dark:text-gray-100">Browser-based</strong><br />
-                  Works in Chrome, Edge & Brave
-                </p>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-lg">💚</span>
-                <p>
-                  <strong className="text-gray-900 dark:text-gray-100">Open Source</strong><br />
-                  Transparent and community-driven
-                </p>
-              </div>
+            <div className="mt-4 space-y-4">
+              {trustItems.map(({ icon: Icon, title, description }) => (
+                <div key={title} className="flex items-start gap-2.5">
+                  <Icon
+                    className="mt-0.5 h-4 w-4 shrink-0 text-mist-500 dark:text-mist-400"
+                    strokeWidth={1.5}
+                  />
+                  <p className="text-sm leading-5 text-mist-600 dark:text-mist-300">
+                    <span className="block font-medium text-mist-900 dark:text-mist-50">
+                      {title}
+                    </span>
+                    {description}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Bottom */}
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-gray-200 pt-8 dark:border-gray-800 sm:flex-row">
-          <p className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-500">
-            Made with <Heart className="h-4 w-4 text-red-500" /> for fast, private compression
+        <div className="mt-12 flex flex-col gap-2 border-t border-mist-200 pt-6 dark:border-mist-800 sm:flex-row sm:items-center sm:justify-between">
+          <p className="mono text-xs text-mist-500 dark:text-mist-400">
+            Made for fast, private compression
           </p>
-          <p className="text-sm text-gray-500 dark:text-gray-500">
-            © {new Date().getFullYear()} CSqueeze. Free forever! 🎉
+          <p className="mono text-xs text-mist-500 dark:text-mist-400">
+            &copy; {new Date().getFullYear()} CSqueeze
           </p>
         </div>
       </div>

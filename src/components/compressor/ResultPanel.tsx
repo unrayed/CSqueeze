@@ -1,4 +1,4 @@
-import { Download, RotateCcw } from 'lucide-react';
+import { Download, RotateCcw, Check } from 'lucide-react';
 import { formatBytes, formatPercentage, calculateReduction } from '../../lib/utils';
 import type { CompressionResult } from '../../types';
 
@@ -14,10 +14,8 @@ export function ResultPanel({ result, filename, onReset }: ResultPanelProps) {
   const reduction = calculateReduction(result.originalSize, result.outputSize);
   const encodingTimeSeconds = result.encodingTime / 1000;
 
-  // Generate download filename
   const downloadFilename = generateOutputFilename(filename);
 
-  // Create download URL
   const downloadUrl = URL.createObjectURL(result.blob);
 
   const handleDownload = () => {
@@ -30,91 +28,62 @@ export function ResultPanel({ result, filename, onReset }: ResultPanelProps) {
   };
 
   return (
-    <div className="rounded-3xl border-2 border-primary-200 bg-primary-50 p-6 dark:border-primary-800 dark:bg-primary-900/20">
-      {/* Success header */}
-      <div className="flex items-center gap-4">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-100 text-3xl dark:bg-primary-900/50">
-          🎉
-        </div>
+    <div className="rounded-xl border border-mist-200 bg-white p-5 dark:border-mist-800 dark:bg-mist-900">
+      <div className="flex items-start gap-3">
+        <Check
+          className="mt-0.5 h-5 w-5 shrink-0 text-primary-700 dark:text-primary-300"
+          strokeWidth={1.5}
+        />
         <div>
-          <h3 className="text-xl font-bold text-primary-800 dark:text-primary-200">
-            Squeezed successfully!
-          </h3>
-          <p className="text-primary-700 dark:text-primary-300">
-            Your video is ready to download
+          <h3 className="text-sm font-medium">Compressed and ready</h3>
+          <p className="mt-0.5 text-sm text-mist-500 dark:text-mist-400">
+            Preview the MP4 or download it to your device.
           </p>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
         <StatCard
           label="Output size"
           value={formatBytes(result.outputSize)}
-          emoji="📦"
           highlight
         />
-        <StatCard
-          label="Reduction"
-          value={formatPercentage(reduction)}
-          emoji="📉"
-        />
-        <StatCard
-          label="Time"
-          value={`${encodingTimeSeconds.toFixed(1)}s`}
-          emoji="⏱️"
-        />
-        <StatCard
-          label="Attempts"
-          value={String(result.attempts)}
-          emoji="🔄"
-        />
+        <StatCard label="Reduction" value={formatPercentage(reduction)} />
+        <StatCard label="Time" value={`${encodingTimeSeconds.toFixed(1)}s`} />
+        <StatCard label="Passes" value={String(result.attempts)} />
       </div>
 
-      {/* Visual size comparison */}
-      <div className="mt-6 rounded-2xl bg-white p-4 dark:bg-gray-800">
-        <div className="mb-3 flex items-center justify-between text-sm">
-          <span className="text-gray-500">
-            {formatBytes(result.originalSize)} → {formatBytes(result.outputSize)}
+      <div className="mt-4 rounded-lg border border-mist-200 bg-mist-50 p-4 dark:border-mist-800 dark:bg-mist-950/50">
+        <div className="flex items-center justify-between text-xs">
+          <span className="mono text-mist-500 dark:text-mist-400">
+            {formatBytes(result.originalSize)} &rarr; {formatBytes(result.outputSize)}
           </span>
-          <span className="font-bold text-primary-600 dark:text-primary-400">
-            {formatPercentage(reduction)} smaller! ✨
+          <span className="mono text-primary-700 dark:text-primary-300">
+            {formatPercentage(reduction)} smaller
           </span>
         </div>
-        <div className="relative h-4 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-          <div className="absolute inset-0 flex">
-            <div
-              className="h-full bg-primary-500 transition-all"
-              style={{ width: `${Math.min(100, (result.outputSize / result.originalSize) * 100)}%` }}
-            />
-          </div>
+        <div className="relative mt-2.5 h-1.5 overflow-hidden rounded-full bg-mist-200 dark:bg-mist-800">
+          <div
+            className="h-full rounded-full bg-primary-700 dark:bg-primary-400"
+            style={{ width: `${Math.min(100, (result.outputSize / result.originalSize) * 100)}%` }}
+          />
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-        <button
-          onClick={handleDownload}
-          className="btn-primary flex-1 py-4"
-        >
-          <Download className="h-5 w-5" />
+      <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+        <button onClick={handleDownload} className="btn-primary h-11 flex-1">
+          <Download className="h-4 w-4" strokeWidth={1.5} />
           Download MP4
         </button>
-        <button
-          onClick={onReset}
-          className="btn-secondary py-4"
-        >
-          <RotateCcw className="h-5 w-5" />
-          Squeeze another
+        <button onClick={onReset} className="btn-secondary h-11">
+          <RotateCcw className="h-4 w-4" strokeWidth={1.5} />
+          Compress another
         </button>
       </div>
 
-      {/* Preview player */}
-      <div className="mt-6">
-        <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
-          <span>👀</span> Preview
-        </p>
-        <div className="overflow-hidden rounded-2xl bg-black">
+      <div className="mt-5">
+        <p className="mb-2 text-sm font-medium">Preview</p>
+        <div className="overflow-hidden rounded-lg bg-black">
           <video
             src={downloadUrl}
             controls
@@ -123,8 +92,9 @@ export function ResultPanel({ result, filename, onReset }: ResultPanelProps) {
             style={{ maxHeight: '300px' }}
           />
         </div>
-        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-          Tip: For best playback, download the file. Browser preview may have minor sync issues.
+        <p className="mt-2 text-xs text-mist-500 dark:text-mist-400">
+          Browser playback can have minor sync issues. Download the file for the
+          most accurate result.
         </p>
       </div>
     </div>
@@ -134,24 +104,22 @@ export function ResultPanel({ result, filename, onReset }: ResultPanelProps) {
 interface StatCardProps {
   label: string;
   value: string;
-  emoji: string;
   highlight?: boolean;
 }
 
-function StatCard({ label, value, emoji, highlight }: StatCardProps) {
+function StatCard({ label, value, highlight }: StatCardProps) {
   return (
-    <div className="rounded-2xl bg-white p-4 text-center dark:bg-gray-800">
-      <div className="text-2xl">{emoji}</div>
+    <div className="rounded-lg border border-mist-200 bg-mist-50 p-3 dark:border-mist-800 dark:bg-mist-950/50">
       <p
-        className={`mt-1 text-xl font-bold ${
+        className={`mono text-sm font-medium ${
           highlight
-            ? 'text-primary-600 dark:text-primary-400'
-            : 'text-gray-900 dark:text-gray-100'
+            ? 'text-primary-700 dark:text-primary-300'
+            : 'text-mist-900 dark:text-mist-50'
         }`}
       >
         {value}
       </p>
-      <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
+      <p className="mt-0.5 text-xs leading-4 text-mist-500 dark:text-mist-400">{label}</p>
     </div>
   );
 }

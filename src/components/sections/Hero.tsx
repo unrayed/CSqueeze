@@ -1,150 +1,145 @@
 import { motion } from 'framer-motion';
-import { Sparkles, Zap, Lock, PartyPopper } from 'lucide-react';
+import { ArrowRight, Lock } from 'lucide-react';
+
+const ease: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+const ticks = Array.from({ length: 51 }, (_, i) => i);
 
 export function Hero() {
   return (
-    <section className="relative min-h-[90vh] overflow-hidden bg-white dark:bg-gray-950">
-
-      <div className="relative mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-28 lg:px-8 lg:py-36">
-        <div className="text-center">
-          {/* Fun badge */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="mb-6 inline-flex items-center gap-2 rounded-full bg-primary-100 px-4 py-2 dark:bg-primary-900/50"
-          >
-            <Sparkles className="h-4 w-4 text-primary-600 dark:text-primary-400" />
-            <span className="text-sm font-semibold text-primary-700 dark:text-primary-300">
-              100% Free & Private - Your videos stay on your device!
-            </span>
-            <span className="emoji-wave">👋</span>
-          </motion.div>
-
-          {/* Main headline */}
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-balance text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-7xl"
-          >
-            Squish your videos{' '}
-            <span className="gradient-text">to the perfect size</span>
-            <br className="hidden sm:block" />
-            <span className="mt-2 inline-block">in seconds! ⚡</span>
-          </motion.h1>
-
-          {/* Subheadline */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="mx-auto mt-6 max-w-2xl text-base text-gray-600 dark:text-gray-400 sm:text-xl"
-          >
-            Need to fit that video into Discord's 10MB limit? Email attachment too big? 
-            We've got you covered! <span className="font-semibold text-gray-900 dark:text-white">No uploads, no waiting, no nonsense.</span>
-          </motion.p>
-
-          {/* Feature pills */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="mt-8 flex flex-wrap justify-center gap-3"
-          >
-            {[
-              { icon: Lock, label: 'Private & Secure', color: 'bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-300' },
-              { icon: Zap, label: 'Lightning Fast', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300' },
-              { icon: PartyPopper, label: 'Totally Free', color: 'bg-pink-100 text-pink-700 dark:bg-pink-900/50 dark:text-pink-300' },
-            ].map(({ icon: Icon, label, color }) => (
-              <span
-                key={label}
-                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${color}`}
-              >
-                <Icon className="h-4 w-4" />
-                {label}
-              </span>
-            ))}
-          </motion.div>
-
-          {/* CTA Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="mt-10 flex flex-col items-stretch gap-4 sm:flex-row sm:justify-center"
-          >
-            <a
-              href="#compressor"
-              className="btn-primary w-full px-8 py-4 text-lg sm:w-auto"
-            >
-              <Sparkles className="h-5 w-5" />
-              Start Compressing - It's Free!
-            </a>
-            <a
-              href="#how-it-works"
-              className="btn-ghost w-full text-lg sm:w-auto"
-            >
-              See how it works →
-            </a>
-          </motion.div>
-
-          {/* Social proof hint */}
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.6 }}
-            className="mt-8 text-sm text-gray-500 dark:text-gray-400"
-          >
-            🎉 Trusted by creators everywhere • Works in Chrome, Edge & Brave
-          </motion.p>
-        </div>
-
-        {/* Preview mockup */}
+    <section className="border-b border-mist-200 bg-mist-50 dark:border-mist-800 dark:bg-mist-950">
+      <div className="container-page grid items-center gap-14 py-16 lg:min-h-[calc(100vh-4rem)] lg:grid-cols-[1.05fr_1fr] lg:gap-20 lg:py-20">
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.5 }}
-          className="mx-auto mt-16 max-w-4xl"
+          transition={{ duration: 0.4, ease }}
         >
-          <div className="relative rounded-3xl border border-gray-200 bg-white p-1.5 shadow-2xl ring-1 ring-gray-900/5 dark:border-gray-700 dark:bg-gray-900 dark:ring-white/5">
-            {/* Browser chrome */}
-            <div className="flex items-center gap-2 rounded-t-2xl bg-gray-100 px-4 py-3 dark:bg-gray-800">
-              <div className="flex gap-1.5">
-                <div className="h-3 w-3 rounded-full bg-red-400" />
-                <div className="h-3 w-3 rounded-full bg-yellow-400" />
-                <div className="h-3 w-3 rounded-full bg-primary-400" />
+          <p className="flex items-center gap-2 text-xs font-medium text-mist-500 dark:text-mist-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary-600 dark:bg-primary-400" />
+            Browser-based video compression
+          </p>
+
+          <h1 className="mt-5 max-w-[16ch] text-balance text-4xl font-medium leading-[1.06] tracking-[-0.02em] sm:text-5xl lg:text-6xl">
+            Squeeze a video to the size your upload allows
+          </h1>
+
+          <p className="mt-6 max-w-[46ch] text-base leading-7 text-mist-600 dark:text-mist-300 sm:text-lg sm:leading-8">
+            Set a target, and CSqueeze re-encodes the file in this tab until it
+            fits. Discord&rsquo;s 10 MB, an email attachment, a 25 MB upload. It
+            never leaves your device.
+          </p>
+
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <a href="#compressor" className="btn-primary h-11 px-5">
+              Compress a video
+              <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
+            </a>
+            <a href="#how-it-works" className="btn-secondary h-11 px-5">
+              How it works
+            </a>
+          </div>
+
+          <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-mist-500 dark:text-mist-400">
+            <span className="inline-flex items-center gap-2">
+              <Lock className="h-4 w-4" strokeWidth={1.5} />
+              No uploads
+            </span>
+            <span className="hidden h-3 w-px bg-mist-300 dark:bg-mist-700 sm:block" />
+            <span>No account</span>
+            <span className="hidden h-3 w-px bg-mist-300 dark:bg-mist-700 sm:block" />
+            <span>Works offline after load</span>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1, ease }}
+          className="relative"
+        >
+          <div className="rounded-2xl border border-mist-200 bg-white p-5 shadow-[0_8px_24px_rgba(11,18,16,0.06)] dark:border-mist-800 dark:bg-mist-900 dark:shadow-[0_8px_24px_rgba(0,0,0,0.35)] sm:p-6">
+            <div className="flex items-center justify-between">
+              <span className="mono text-xs text-mist-500 dark:text-mist-400">
+                Output target
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-xs text-mist-500 dark:text-mist-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary-600 dark:bg-primary-400" />
+                On device
+              </span>
+            </div>
+
+            <div className="mt-5 flex items-end justify-between gap-4">
+              <div>
+                <p className="text-xs text-mist-500 dark:text-mist-400">Original</p>
+                <p className="mono mt-1 text-2xl text-mist-500 line-through decoration-mist-400/60 dark:text-mist-400">
+                  47.2 MB
+                </p>
               </div>
-              <div className="ml-4 flex-1 rounded-lg bg-white px-4 py-1.5 text-sm text-gray-500 dark:bg-gray-900 dark:text-gray-400">
-                csqueeze.unray.me
+              <span className="mono pb-1 text-sm text-mist-500">&rarr;</span>
+              <div className="text-right">
+                <p className="text-xs text-mist-500 dark:text-mist-400">Compressed</p>
+                <p className="mono mt-1 text-3xl font-medium text-mist-900 dark:text-mist-50">
+                  9.8 MB
+                </p>
               </div>
             </div>
-            {/* Content preview */}
-            <div className="rounded-b-2xl bg-gray-50 p-4 dark:bg-gray-800 sm:p-8">
-              <div className="flex flex-col items-center justify-center gap-4 py-8 sm:flex-row sm:gap-8">
-                <div className="text-center">
-                  <div className="text-5xl font-bold text-gray-400">47MB</div>
-                  <div className="mt-1 text-sm text-gray-500">Original</div>
-                </div>
-                <div className="text-4xl text-gray-300">→</div>
-                <div className="text-center">
-                  <div className="text-5xl font-bold text-primary-600 dark:text-primary-400">10MB</div>
-                  <div className="mt-1 text-sm text-gray-500">Compressed ✨</div>
-                </div>
+
+            <div className="mt-4 inline-flex items-center gap-2 rounded-md bg-primary-50 px-2 py-1 text-xs font-medium text-primary-800 dark:bg-primary-900/30 dark:text-primary-200">
+              79.2% smaller
+            </div>
+
+            <div className="relative mt-8 h-16">
+              <div className="absolute left-[20%] top-0 flex -translate-x-1/2 flex-col items-center">
+                <span className="mono rounded bg-primary-700 px-1.5 py-0.5 text-xs leading-4 text-white dark:bg-primary-300 dark:text-primary-950">
+                  10 MB
+                </span>
+                <span className="mt-1 h-8 w-px bg-primary-700 dark:bg-primary-300" />
               </div>
-              <div className="mx-auto h-3 max-w-md overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-                <motion.div
-                  className="h-full rounded-full bg-primary-500"
-                  initial={{ width: '0%' }}
-                  animate={{ width: '100%' }}
-                  transition={{ duration: 2, delay: 1, ease: 'easeOut' }}
-                />
+
+              <div className="absolute inset-x-0 bottom-0 flex h-8 items-end justify-between">
+                {ticks.map((tick) => {
+                  const major = tick % 10 === 0;
+                  const mid = tick % 5 === 0;
+                  return (
+                    <span
+                      key={tick}
+                      className={
+                        major
+                          ? 'h-3 w-px bg-mist-400 dark:bg-mist-500'
+                          : mid
+                            ? 'h-2 w-px bg-mist-300 dark:bg-mist-600'
+                            : 'h-1 w-px bg-mist-200 dark:bg-mist-700'
+                      }
+                    />
+                  );
+                })}
               </div>
-              <p className="mt-4 text-center text-sm font-medium text-primary-600 dark:text-primary-400">
-                79% smaller - Ready for Discord! 🎮
-              </p>
+            </div>
+            <div className="mono mt-1 flex justify-between text-xs text-mist-500 dark:text-mist-400">
+              <span>0</span>
+              <span>25 MB</span>
+              <span>50 MB</span>
+            </div>
+
+            <div className="mt-6 grid grid-cols-3 gap-3 border-t border-mist-200 pt-5 dark:border-mist-800">
+              <div>
+                <p className="text-xs text-mist-500 dark:text-mist-400">Encoder</p>
+                <p className="mono mt-1 text-sm">H.264</p>
+              </div>
+              <div>
+                <p className="text-xs text-mist-500 dark:text-mist-400">Passes</p>
+                <p className="mono mt-1 text-sm">2 of 4</p>
+              </div>
+              <div>
+                <p className="text-xs text-mist-500 dark:text-mist-400">Upload</p>
+                <p className="mono mt-1 text-sm">0 bytes</p>
+              </div>
             </div>
           </div>
+
+          <p className="mono mt-3 text-right text-xs text-mist-500 dark:text-mist-400">
+            Sample session &middot; 1920&times;1080 &middot; 0:48
+          </p>
         </motion.div>
       </div>
     </section>

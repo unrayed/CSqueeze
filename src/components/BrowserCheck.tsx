@@ -12,14 +12,12 @@ export function BrowserCheck() {
   const [warningType, setWarningType] = useState<'unsupported' | 'limited' | 'insecure' | null>(null);
 
   useEffect(() => {
-    // Check if already dismissed in this session
     const wasDismissed = sessionStorage.getItem('browserWarningDismissed');
     if (wasDismissed) {
       setDismissed(true);
       return;
     }
 
-    // Check for secure context first - WebCodecs requires HTTPS
     if (!isSecureContext()) {
       setWarningType('insecure');
       setShowWarning(true);
@@ -40,37 +38,43 @@ export function BrowserCheck() {
   if (dismissed || !showWarning) return null;
 
   return (
-    <div className="bg-yellow-50 dark:bg-yellow-900/30">
-      <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
+    <div className="border-b border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/40">
+      <div className="mx-auto max-w-7xl px-6 py-3 lg:px-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+            <AlertTriangle
+              className="h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400"
+              strokeWidth={1.5}
+            />
             <div>
               {warningType === 'insecure' ? (
                 <>
-                  <p className="font-medium text-yellow-800 dark:text-yellow-200">
-                    HTTPS required 🔒
+                  <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                    HTTPS required
                   </p>
-                  <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                    Video compression requires a secure connection (HTTPS). Please access this site via HTTPS or localhost.
+                  <p className="text-sm text-amber-800 dark:text-amber-200">
+                    Video compression needs a secure connection. Open this site
+                    over HTTPS or on localhost.
                   </p>
                 </>
               ) : warningType === 'unsupported' ? (
                 <>
-                  <p className="font-medium text-yellow-800 dark:text-yellow-200">
+                  <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
                     Browser not supported
                   </p>
-                  <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                    Your browser doesn't support WebCodecs, which is required for video compression.
+                  <p className="text-sm text-amber-800 dark:text-amber-200">
+                    Your browser does not support WebCodecs, which video
+                    compression needs.
                   </p>
                 </>
               ) : (
                 <>
-                  <p className="font-medium text-yellow-800 dark:text-yellow-200">
+                  <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
                     Limited browser support
                   </p>
-                  <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                    For the best experience, we recommend using Chrome, Edge, or another Chromium-based browser.
+                  <p className="text-sm text-amber-800 dark:text-amber-200">
+                    For the best experience, use Chrome, Edge, or another
+                    Chromium-based browser.
                   </p>
                 </>
               )}
@@ -82,18 +86,18 @@ export function BrowserCheck() {
                 href="https://www.google.com/chrome/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-lg bg-yellow-100 px-3 py-1.5 text-sm font-medium text-yellow-800 hover:bg-yellow-200 dark:bg-yellow-800 dark:text-yellow-100 dark:hover:bg-yellow-700"
+                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-100 px-2.5 text-sm font-medium text-amber-900 transition-colors duration-150 ease-out hover:bg-amber-200 dark:border-amber-800 dark:bg-amber-900/50 dark:text-amber-100 dark:hover:bg-amber-900"
               >
-                <Chrome className="h-4 w-4" />
+                <Chrome className="h-4 w-4" strokeWidth={1.5} />
                 Get Chrome
               </a>
             )}
             <button
               onClick={handleDismiss}
-              className="rounded-lg p-1.5 text-yellow-600 hover:bg-yellow-100 dark:text-yellow-400 dark:hover:bg-yellow-800"
+              className="rounded-lg p-1.5 text-amber-700 transition-colors duration-150 ease-out hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-900/50"
               aria-label="Dismiss"
             >
-              <X className="h-4 w-4" />
+              <X className="h-4 w-4" strokeWidth={1.5} />
             </button>
           </div>
         </div>

@@ -4,51 +4,39 @@ import { Shield, Target, Sliders, Download, Eye, Wifi } from 'lucide-react';
 const features = [
   {
     icon: Shield,
-    title: 'Your Privacy Matters',
-    description: 'Your videos never leave your device. Everything happens right in your browser - we literally can\'t see your files!',
-    color: 'bg-primary-500',
-    bgColor: 'bg-primary-50 dark:bg-primary-950/30',
-    emoji: '🔒',
+    title: 'Your privacy matters',
+    description:
+      'Your videos never leave your device. Everything runs in your browser, so there is nothing for us to see or store.',
   },
   {
     icon: Target,
-    title: 'Hit Your Target Size',
-    description: 'Need exactly 8MB for Discord? 25MB for email? Set your limit and we\'ll nail it every time. No guesswork!',
-    color: 'bg-amber-500',
-    bgColor: 'bg-amber-50 dark:bg-amber-950/30',
-    emoji: '🎯',
+    title: 'Hit your target size',
+    description:
+      'Need 10 MB for Discord or 25 MB for email? Set the limit and the encoder works to it, lowering the bitrate when a pass comes in over.',
   },
   {
     icon: Sliders,
-    title: 'Smart Quality Control',
-    description: 'We automatically find the sweet spot between size and quality. Want more control? Toggle advanced options!',
-    color: 'bg-purple-500',
-    bgColor: 'bg-purple-50 dark:bg-purple-950/30',
-    emoji: '✨',
+    title: 'Automatic quality control',
+    description:
+      'The encoder finds the balance between size and quality. Open advanced settings when you want to choose the resolution or audio bitrate yourself.',
   },
   {
     icon: Download,
-    title: 'One-Click Download',
-    description: 'No accounts, no sign-ups, no emails. Just compress and download your MP4 instantly. Simple as that!',
-    color: 'bg-blue-500',
-    bgColor: 'bg-blue-50 dark:bg-blue-950/30',
-    emoji: '⚡',
+    title: 'One-click download',
+    description:
+      'No account, no sign-up, no email. Compress and download the MP4 as soon as it is ready.',
   },
   {
     icon: Eye,
-    title: 'Preview Before Download',
-    description: 'Check out your compressed video right in the browser before downloading. Make sure it looks great!',
-    color: 'bg-pink-500',
-    bgColor: 'bg-pink-50 dark:bg-pink-950/30',
-    emoji: '👀',
+    title: 'Preview before download',
+    description:
+      'Watch the result in the browser first, then keep it if it looks right.',
   },
   {
     icon: Wifi,
-    title: 'Works Offline-ish',
-    description: 'Once loaded, the app works without internet. Your videos stay local and compression happens instantly.',
-    color: 'bg-teal-500',
-    bgColor: 'bg-teal-50 dark:bg-teal-950/30',
-    emoji: '📡',
+    title: 'Works offline',
+    description:
+      'Once the page is loaded, the compressor runs without a network connection. Your video stays local.',
   },
 ];
 
@@ -56,52 +44,46 @@ const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
+    transition: { staggerChildren: 0.04 },
   },
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 30 },
+  hidden: { opacity: 0, y: 8 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.5 },
+    transition: {
+      duration: 0.32,
+      ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
+    },
   },
 };
 
 export function Features() {
   return (
-    <section id="features" className="section-padding bg-gradient-warm">
-      <div className="mx-auto max-w-7xl">
-        <div className="text-center">
-          <motion.span
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="badge-primary mb-4 inline-flex"
-          >
-            <span className="mr-1">💪</span> Features
-          </motion.span>
+    <section id="features" className="scroll-mt-16 section-padding bg-mist-50 dark:bg-mist-950">
+      <div className="mx-auto max-w-7xl px-6 lg:px-8">
+        <div className="max-w-2xl">
+          <p className="eyebrow">Features</p>
           <motion.h2
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 8 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-            className="text-balance text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl"
+            transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-3 text-balance text-3xl font-medium tracking-[-0.01em] sm:text-4xl"
           >
-            Why you'll{' '}
-            <span className="gradient-text">love</span> ClipSqueeze
+            Built for files that have to fit
           </motion.h2>
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 8 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="mx-auto mt-4 max-w-2xl text-base text-gray-600 dark:text-gray-400 sm:text-lg"
+            transition={{ duration: 0.32, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
+            className="mt-4 text-base leading-7 text-mist-600 dark:text-mist-300"
           >
-            We built the video compressor we wished existed. Fast, private, and actually easy to use.
+            Every option exists for one job: get the file under the limit
+            without sending it anywhere.
           </motion.p>
         </div>
 
@@ -109,31 +91,25 @@ export function Features() {
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: '-100px' }}
-          className="mt-12 grid gap-6 sm:mt-16 sm:grid-cols-2 lg:grid-cols-3"
+          viewport={{ once: true, margin: '-80px' }}
+          className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
         >
           {features.map((feature) => (
             <motion.div
               key={feature.title}
               variants={itemVariants}
-              className={`card-playful group ${feature.bgColor} border-0`}
+              className="rounded-2xl border border-mist-200 bg-white p-6 dark:border-mist-800 dark:bg-mist-900"
             >
-              <div className="flex items-start gap-4">
-                <div
-                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${feature.color} text-white shadow-lg`}
-                >
-                  <feature.icon className="h-6 w-6" />
-                </div>
-                <div>
-                  <h3 className="flex items-center gap-2 text-lg font-bold">
-                    {feature.title}
-                    <span className="text-xl">{feature.emoji}</span>
-                  </h3>
-                  <p className="mt-2 text-gray-600 dark:text-gray-400">
-                    {feature.description}
-                  </p>
-                </div>
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-mist-200 bg-mist-50 dark:border-mist-800 dark:bg-mist-800">
+                <feature.icon
+                  className="h-4 w-4 text-mist-500 dark:text-mist-400"
+                  strokeWidth={1.5}
+                />
               </div>
+              <h3 className="mt-4 text-base font-medium">{feature.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-mist-600 dark:text-mist-300">
+                {feature.description}
+              </p>
             </motion.div>
           ))}
         </motion.div>

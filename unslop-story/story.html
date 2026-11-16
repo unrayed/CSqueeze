@@ -1,0 +1,757 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<meta name="unslop-steps" content="Spacing, Color, Type, Copy, Layout, Details">
+<meta name="unslop-frame" content="0 0 960">
+<title>CSqueeze hero unslop</title>
+<style>
+  * { box-sizing: border-box; }
+  html { background: #fff; }
+  body {
+    margin: 0;
+    min-height: 1000px;
+    background: #fff;
+    color: #111827;
+    font-family: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen {
+    position: relative;
+    width: 960px;
+    height: 960px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .glow {
+    position: absolute;
+    top: -140px;
+    right: -90px;
+    width: 540px;
+    height: 440px;
+    background: radial-gradient(closest-side, rgba(127, 191, 74, 0.3), rgba(236, 72, 153, 0.12), transparent 72%);
+    filter: blur(12px);
+    pointer-events: none;
+  }
+
+  .nav {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    height: 72px;
+    border-bottom: 1px solid rgba(229, 231, 235, 0.5);
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px);
+  }
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    width: 100%;
+    height: 100%;
+    padding: 0 32px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: inherit;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .mark {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 32% 26%, #9ad777, #5da546 56%, #3f7f3c);
+    box-shadow: 0 4px 10px rgba(93, 165, 70, 0.35), inset 0 1px 2px rgba(255, 255, 255, 0.5);
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .brand-name { font-size: 20px; font-weight: 800; letter-spacing: -0.01em; }
+  .brand-accent { color: #5da546; }
+  .nav-links { display: flex; align-items: center; gap: 4px; }
+  .nav-links a {
+    padding: 9px 14px;
+    border-radius: 12px;
+    color: #4b5563;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .nav-actions { display: flex; align-items: center; gap: 12px; }
+  .icon-btn {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: #4b5563;
+  }
+  .icon-btn svg { width: 20px; height: 20px; }
+  .nav-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 40px;
+    padding: 0 20px;
+    border-radius: 16px;
+    background: #5da546;
+    box-shadow: 0 6px 16px rgba(93, 165, 70, 0.3);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .nav-cta svg, .cta-primary svg { width: 14px; height: 14px; }
+
+  .hero {
+    position: relative;
+    z-index: 1;
+    height: 888px;
+    padding: 32px 32px 40px;
+  }
+  .hero-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+    justify-items: center;
+    gap: 32px;
+    height: 100%;
+  }
+  .copy {
+    display: grid;
+    justify-items: center;
+    width: 100%;
+    max-width: 760px;
+    text-align: center;
+  }
+  .badge-slot {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 36px;
+    margin-bottom: 18px;
+  }
+  .badge {
+    position: absolute;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    padding: 0 16px;
+    border-radius: 18px;
+    background: #ecf6c1;
+    color: #3f7f3c;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .badge svg { width: 16px; height: 16px; }
+  .wave { animation: wave 2.4s infinite; transform-origin: 70% 70%; display: inline-block; }
+  @keyframes wave {
+    0%, 60%, 100% { transform: rotate(0deg); }
+    10% { transform: rotate(14deg); }
+    20% { transform: rotate(-8deg); }
+    30% { transform: rotate(14deg); }
+    40% { transform: rotate(-4deg); }
+    50% { transform: rotate(10deg); }
+  }
+  .eyebrow {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    color: #647065;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .eyebrow::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #5da546;
+  }
+  .headline {
+    max-width: 780px;
+    margin: 0 0 26px;
+    color: #111827;
+    font-size: 42px;
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+  .grad {
+    position: relative;
+    color: #3f7f3c;
+  }
+  .grad::after {
+    content: attr(data-text);
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(92deg, #5da546 0%, #aacf4c 48%, #5da546 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    pointer-events: none;
+  }
+  .sub {
+    max-width: 620px;
+    margin: 0 0 18px;
+    color: #4b5563;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+  .sub strong { color: #111827; font-weight: 600; }
+  .s2 .sub strong { color: #121a16; }
+  .pills {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin: 0 0 30px;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 34px;
+    padding: 0 16px;
+    border-radius: 17px;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .pill svg { width: 15px; height: 15px; }
+  .pill-lock { background: #ecf6c1; color: #3f7f3c; }
+  .pill-fast { background: #fef3c7; color: #b45309; }
+  .pill-free { background: #fce7f3; color: #be185d; }
+  .cta-row {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin: 0 0 18px;
+  }
+  .cta-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    height: 48px;
+    padding: 0 28px;
+    border-radius: 16px;
+    background: #5da546;
+    box-shadow: 0 8px 20px rgba(93, 165, 70, 0.32);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .cta-secondary {
+    display: inline-flex;
+    align-items: center;
+    height: 48px;
+    padding: 0 22px;
+    border: 1px solid transparent;
+    border-radius: 16px;
+    color: #374151;
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .proof-slot {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 20px;
+  }
+  .social {
+    position: absolute;
+    margin: 0;
+    color: #6b7280;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+  .trust {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: #647065;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+  .trust i { display: block; width: 1px; height: 12px; background: #bcc8b7; }
+
+  .preview-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    width: 100%;
+    max-width: 660px;
+  }
+  .preview {
+    width: 100%;
+    height: 300px;
+    padding: 6px;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(17, 24, 39, 0.05);
+  }
+  .chrome {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 52px;
+    padding: 0 16px;
+    border-radius: 18px 18px 0 0;
+    background: #f3f4f6;
+  }
+  .dots { display: flex; gap: 6px; }
+  .dots i { display: block; width: 11px; height: 11px; border-radius: 50%; }
+  .dots i:nth-child(1) { background: #f87171; }
+  .dots i:nth-child(2) { background: #fbbf24; }
+  .dots i:nth-child(3) { background: #4ade80; }
+  .url {
+    flex: 1;
+    margin-left: 8px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    background: #fff;
+    color: #6b7280;
+    font-size: 13px;
+  }
+  .panel { position: relative; padding: 24px; text-align: center; }
+  .panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-height: 0;
+    margin: 0;
+    overflow: hidden;
+    color: #647065;
+    font-size: 12px;
+  }
+  .ondv { display: inline-flex; align-items: center; gap: 6px; }
+  .ondv::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #5da546;
+  }
+  .mono {
+    font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  .figures { width: 100%; }
+  .figures .swap { display: grid; width: 100%; }
+  .figures .swap > .from,
+  .figures .swap > .to {
+    grid-area: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 36px;
+  }
+  .fig { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .cap { color: #6b7280; font-size: 13px; }
+  .num {
+    color: #9ca3af;
+    font-size: 42px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .num-comp { color: #5da546; }
+  .arrow { color: #d1d5db; font-size: 30px; line-height: 1; }
+  .progress {
+    height: 10px;
+    max-width: 430px;
+    margin: 16px auto 0;
+    overflow: hidden;
+    border-radius: 5px;
+    background: #e5e7eb;
+  }
+  .progress span { display: block; width: 100%; height: 100%; border-radius: 5px; background: #7fbf4a; }
+  .smaller {
+    margin: 14px 0 0;
+    color: #5da546;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .clean-extra {
+    max-height: 0;
+    margin: 0;
+    overflow: hidden;
+    text-align: left;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: #f6fbe3;
+    color: #2f5e2f;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .ruler { position: relative; height: 78px; margin-top: 16px; }
+  .target {
+    position: absolute;
+    left: 20%;
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transform: translateX(-50%);
+    z-index: 2;
+  }
+  .target-tag {
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #3f7f3c;
+    color: #fff;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .target-line { width: 2px; height: 30px; background: #3f7f3c; }
+  .ticks {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 18px;
+    height: 14px;
+    background-image:
+      repeating-linear-gradient(90deg, #8d9a8d 0 1px, transparent 1px 6.8px),
+      repeating-linear-gradient(90deg, #bcc8b7 0 1px, transparent 1px 34px),
+      repeating-linear-gradient(90deg, #d9e1d3 0 1px, transparent 1px 6.8px);
+    background-repeat: repeat-x;
+    background-position: 0 100%, 0 100%, 0 100%;
+    background-size: 100% 14px, 100% 9px, 100% 5px;
+  }
+  .ruler-legend {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: space-between;
+    color: #647065;
+    font-size: 12px;
+  }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid #d9e1d3;
+  }
+  .stats .cap { font-size: 12px; }
+  .stats .val { margin-top: 3px; color: #121a16; font-size: 14px; }
+  .note {
+    max-height: 0;
+    margin: 0;
+    overflow: hidden;
+    color: #647065;
+    font-size: 12px;
+    text-align: right;
+  }
+
+  .s1 .hero { padding: 44px 32px 48px; }
+  .s1 .badge-slot { margin-bottom: 16px; }
+  .s1 .headline { margin-bottom: 20px; }
+  .s1 .sub { margin-bottom: 24px; }
+  .s1 .pills { margin-bottom: 32px; }
+  .s1 .cta-row { margin-bottom: 40px; }
+
+  html.s2, .s2 body, .s2 .screen { background: #f5f6f2; }
+  .s2 .glow { opacity: 0; }
+  .s2 .nav {
+    border-bottom-color: rgba(217, 225, 211, 0.8);
+    background: rgba(245, 246, 242, 0.85);
+  }
+  .s2 .headline { color: #121a16; }
+  .s2 .grad { color: #35413a; }
+  .s2 .grad::after { opacity: 0; }
+  .s2 .brand-accent { color: #35413a; }
+  .s2 .nav-links a { color: #4b574d; }
+  .s2 .icon-btn { color: #647065; }
+  .s2 .nav-cta { background: #3f7f3c; box-shadow: none; }
+  .s2 .sub { color: #4b574d; }
+  .s2 .social { color: #647065; }
+  .s2 .cta-primary { background: #3f7f3c; box-shadow: none; }
+  .s2 .cta-secondary { color: #35413a; }
+  .s2 .preview {
+    border-color: #d9e1d3;
+    box-shadow: 0 12px 32px rgba(11, 18, 16, 0.1);
+  }
+  .s2 .chrome { background: #eaede5; }
+  .s2 .url { background: #f5f6f2; color: #647065; }
+  .s2 .num-comp { color: #3f7f3c; }
+  .s2 .smaller { color: #3f7f3c; }
+
+  .s3 .screen { font-family: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif; }
+  .s3 .headline {
+    font-size: 44px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+  .s3 .sub { max-width: 560px; font-size: 16px; line-height: 1.7; }
+  .s3 .num, .s3 .cap, .s3 .target-tag, .s3 .ruler-legend, .s3 .note, .s3 .panel-head {
+    font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  .s3 .num { font-weight: 500; }
+  .s3 .cap { font-size: 12px; }
+  .s3 .social, .s3 .trust { font-size: 13px; }
+
+  .s4 .swap > .from {
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+  .s4 .badge-slot { height: 20px; }
+  .s4 .progress { margin-top: 14px; }
+
+  .swap { position: relative; }
+
+  .s5 .nav { height: 64px; }
+  .s5 .nav-inner { padding: 0 56px; }
+  .s5 .mark {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #3f7f3c;
+    box-shadow: none;
+    font-size: 15px;
+    font-weight: 500;
+  }
+  .s5 .brand-name { font-size: 16px; font-weight: 500; letter-spacing: -0.01em; }
+  .s5 .brand-accent { color: inherit; }
+  .s5 .nav-links a { padding: 8px 12px; border-radius: 8px; font-size: 14px; font-weight: 400; }
+  .s5 .icon-btn { width: 32px; height: 32px; border-radius: 8px; }
+  .s5 .icon-btn svg { width: 16px; height: 16px; }
+  .s5 .nav-cta { height: 40px; padding: 0 16px; font-size: 14px; font-weight: 500; }
+  .s5 .hero { height: 896px; padding: 56px 56px 48px; }
+  .s5 .hero-inner {
+    grid-template-columns: minmax(0, 1.06fr) minmax(0, 0.94fr);
+    justify-items: stretch;
+    gap: 56px;
+  }
+  .s5 .copy {
+    max-width: none;
+    justify-items: start;
+    text-align: left;
+  }
+  .s5 .badge-slot { justify-content: flex-start; }
+  .s5 .headline { max-width: 16ch; font-size: 40px; margin-bottom: 20px; }
+  .s5 .sub { max-width: 44ch; margin-bottom: 34px; }
+  .s5 .proof-slot { justify-content: flex-start; }
+  .s5 .cta-row { justify-content: flex-start; gap: 12px; margin-bottom: 48px; }
+  .s5 .cta-primary { flex: 0 0 auto; height: 44px; padding: 0 20px; border-radius: 12px; font-size: 14px; font-weight: 500; }
+  .s5 .cta-secondary {
+    flex: 0 0 auto;
+    height: 44px;
+    padding: 0 18px;
+    border-color: #d9e1d3;
+    border-radius: 12px;
+    background: #fff;
+    color: #121a16;
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .s5 .preview-wrap { max-width: none; }
+  .s5 .panel { text-align: left; }
+  .s5 .figures .swap > .from, .s5 .figures .swap > .to { justify-content: space-between; gap: 12px; }
+  .s5 .fig { align-items: flex-start; text-align: left; }
+  .s5 .fig-comp { align-items: flex-end; text-align: right; }
+  .s5 .num { font-size: 24px; }
+  .s5 .num-orig { color: #647065; text-decoration: line-through; }
+  .s5 .num-comp { font-size: 30px; color: #121a16; }
+  .s5 .arrow { padding-bottom: 16px; color: #8d9a8d; font-size: 14px; }
+
+  .s6 .nav-cta { border-radius: 8px; }
+  .s6 .cta-primary { border-radius: 8px; font-weight: 500; }
+  .s6 .cta-secondary { border-radius: 8px; font-weight: 500; }
+  .s6 .icon-btn { border-radius: 8px; }
+  .s6 .mark { font-weight: 500; }
+  .s6 .preview {
+    height: 352px;
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(11, 18, 16, 0.06);
+  }
+  .s6 .chrome { max-height: 0; }
+  .s6 .panel { padding: 0; }
+  .s6 .panel-head { max-height: 28px; margin-bottom: 14px; }
+  .s6 .figures { padding-top: 2px; }
+  .s6 .clean-extra { max-height: 320px; margin-top: 12px; }
+  .s6 .note { max-height: 24px; margin-top: 12px; }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="glow"></div>
+
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="#">
+        <span class="mark">C</span>
+        <span class="brand-name">
+          <span class="swap" data-at="4"><span class="from">Clip<span class="brand-accent">Squeeze</span></span><span class="to">CSqueeze</span></span>
+        </span>
+      </a>
+
+      <nav class="nav-links">
+        <a href="#">Features</a>
+        <a href="#">How it works</a>
+        <a href="#">Compressor</a>
+        <a href="#">FAQ</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button class="icon-btn" type="button" aria-label="Change theme">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
+          </svg>
+        </button>
+        <a class="nav-cta" href="#" data-radius>
+          <span class="swap" data-at="4"><span class="from">✦ Start Free</span><span class="to">Compress a video →</span></span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="hero">
+    <div class="hero-inner">
+      <div class="copy">
+        <div class="badge-slot" data-gap="copy">
+          <div class="badge" data-out="4" data-slop="Emoji badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z"></path></svg>
+            100% Free &amp; Private - Your videos stay on your device!
+            <span class="wave">👋</span>
+          </div>
+          <p class="eyebrow" data-in="4">Browser-based video compression</p>
+        </div>
+
+        <h1 class="headline" data-gap="copy">
+          <span class="swap" data-at="4"><span class="from">Squish your videos <span class="grad" data-text="to the perfect size" data-slop="Gradient text">to the perfect size</span> in seconds! ⚡</span><span class="to">Squeeze a video to the size your upload allows</span></span>
+        </h1>
+
+        <p class="sub" data-gap="copy">
+          <span class="swap" data-at="4"><span class="from">Need to fit that video into Discord's 10MB limit? Email attachment too big? We've got you covered! <strong>No uploads, no waiting, no nonsense.</strong></span><span class="to">Set a target, and CSqueeze re-encodes the file in this tab until it fits. Discord's 10 MB, an email attachment, a 25 MB upload. It never leaves your device.</span></span>
+        </p>
+
+        <div class="pills" data-out="2" data-slop="Rainbow pills" data-gap="copy">
+          <span class="pill pill-lock">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg>
+            Private &amp; Secure
+          </span>
+          <span class="pill pill-fast">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"></path></svg>
+            Lightning Fast
+          </span>
+          <span class="pill pill-free">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21l4-10 4 4 3-8 5 14"></path></svg>
+            Totally Free
+          </span>
+        </div>
+
+        <div class="cta-row" data-gap="copy">
+          <a class="cta-primary" href="#" data-radius>
+            <span class="swap" data-at="4"><span class="from">✦ Start Compressing - It's Free!</span><span class="to">Compress a video →</span></span>
+          </a>
+          <a class="cta-secondary" href="#" data-radius>
+            <span class="swap" data-at="4"><span class="from">See how it works →</span><span class="to">How it works</span></span>
+          </a>
+        </div>
+
+        <div class="proof-slot" data-gap="copy">
+          <p class="social" data-out="4" data-slop="Emoji trust line">🎉 Trusted by creators everywhere • Works in Chrome, Edge &amp; Brave</p>
+          <div class="trust" data-in="4">
+            <span>No uploads</span><i></i><span>No account</span><i></i><span>Works offline after load</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="preview-wrap">
+        <div class="preview">
+          <div class="chrome" data-out="6" data-slop="Fake window chrome">
+            <span class="dots"><i></i><i></i><i></i></span>
+            <span class="url">csqueeze.unray.me</span>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head mono" data-in="6">
+              <span>Output target</span>
+              <span class="ondv">On device</span>
+            </div>
+
+            <div class="figures">
+              <span class="swap" data-at="4">
+                <span class="from">
+                  <span class="fig"><span class="cap">Original</span><span class="num num-orig">47MB</span></span>
+                  <span class="arrow">→</span>
+                  <span class="fig fig-comp"><span class="cap">Compressed ✨</span><span class="num num-comp">10MB</span></span>
+                </span>
+                <span class="to">
+                  <span class="fig"><span class="cap">Original</span><span class="num num-orig">47.2 MB</span></span>
+                  <span class="arrow">→</span>
+                  <span class="fig fig-comp"><span class="cap">Compressed</span><span class="num num-comp">9.8 MB</span></span>
+                </span>
+              </span>
+            </div>
+
+            <div class="progress" data-out="6"><span></span></div>
+            <p class="smaller" data-out="6">79% smaller - Ready for Discord! 🎮</p>
+
+            <div class="clean-extra" data-in="6">
+              <span class="chip">79.2% smaller</span>
+              <div class="ruler">
+                <div class="target">
+                  <span class="target-tag mono">10 MB</span>
+                  <span class="target-line"></span>
+                </div>
+                <div class="ticks"></div>
+                <div class="ruler-legend mono"><span>0</span><span>25 MB</span><span>50 MB</span></div>
+              </div>
+              <div class="stats">
+                <div><p class="cap">Encoder</p><p class="val mono">H.264</p></div>
+                <div><p class="cap">Passes</p><p class="val mono">2 of 4</p></div>
+                <div><p class="cap">Upload</p><p class="val mono">0 bytes</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="note mono" data-in="6">Sample session · 1920×1080 · 0:48</p>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>
