@@ -161,9 +161,11 @@ export function BrowserCheck() {
                     Audio encoding unavailable
                   </p>
                   <p className="text-sm text-amber-800 dark:text-amber-200">
-                    This browser cannot decode and encode AAC audio. Videos
-                    without an audio track still work, and you can mute the
-                    audio before compressing.
+                    This browser cannot encode AAC audio through WebCodecs.
+                    Videos without an audio track still work, and you can mute
+                    the audio before compressing. Chromium on Linux currently
+                    has no AAC encoder. Chrome and Edge on Windows or macOS
+                    usually do.
                   </p>
                 </>
               )}
