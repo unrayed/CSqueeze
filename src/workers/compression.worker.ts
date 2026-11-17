@@ -24,6 +24,7 @@ import {
   buildAacAsc,
   encodeWasmAac,
   parseAdtsFrames,
+  preloadAacEncoder,
 } from '../lib/aacFallback';
 import type { AdtsFrame, WasmAacResult } from '../lib/aacFallback';
 import { detectContainer, displayDimensions, rotationFromMatrix } from '../lib/media';
@@ -165,6 +166,8 @@ self.onmessage = (event: MessageEvent<WorkerInputMessage>) => {
       });
   }
 };
+
+void preloadAacEncoder();
 
 interface AvcCBoxLike {
   configurationVersion?: number;

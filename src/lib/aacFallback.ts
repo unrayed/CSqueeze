@@ -114,6 +114,23 @@ export function concatUint8Arrays(arrays: Uint8Array[]): Uint8Array {
   return output;
 }
 
+let warmPromise: Promise<void> | null = null;
+
+export function preloadAacEncoder(): Promise<void> {
+  if (!warmPromise) {
+    warmPromise = (async () => {
+      const encoder = await aac({
+        sampleRate: 48000,
+        channels: 1,
+        bitrate: 64,
+        profile: 'lc',
+      });
+      encoder.free();
+    })().catch(() => {});
+  }
+  return warmPromise;
+}
+
 export async function encodeWasmAac(options: WasmAacOptions): Promise<WasmAacResult> {
   const { planar, sampleRate, channels, bitrateKbps } = options;
   if (planar.length === 0) {

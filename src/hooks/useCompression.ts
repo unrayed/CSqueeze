@@ -125,8 +125,35 @@ export function useCompression(): UseCompressionReturn {
     }
   }, [clearCancelTimer]);
 
+  const createWorker = useCallback((): Worker => {
+    const worker = new Worker(new URL('../workers/compression.worker.ts', import.meta.url), {
+      type: 'module',
+    });
+    workerRef.current = worker;
+    worker.onerror = () => {
+      if (workerRef.current === worker) {
+        worker.terminate();
+        workerRef.current = null;
+      }
+    };
+    return worker;
+  }, []);
+
+  const detachWorker = useCallback(() => {
+    const worker = workerRef.current;
+    if (!worker) return;
+    worker.onmessage = null;
+    worker.onerror = null;
+    worker.onmessageerror = null;
+  }, []);
+
   useEffect(() => {
     mountedRef.current = true;
+    try {
+      createWorker();
+    } catch {
+      // compress() retries worker construction on demand
+    }
     return () => {
       mountedRef.current = false;
       jobIdRef.current += 1;
@@ -136,14 +163,13 @@ export function useCompression(): UseCompressionReturn {
       }
       terminateWorker();
     };
-  }, [terminateWorker]);
+  }, [createWorker, terminateWorker]);
 
   const compress = useCallback(
     (file: File, settings: CompressionSettings) => {
       const jobId = jobIdRef.current + 1;
       jobIdRef.current = jobId;
 
-      terminateWorker();
       if (readerRef.current) {
         readerRef.current.abort();
         readerRef.current = null;
@@ -172,32 +198,33 @@ export function useCompression(): UseCompressionReturn {
       }
 
       let worker: Worker;
-      try {
-        worker = new Worker(new URL('../workers/compression.worker.ts', import.meta.url), {
-          type: 'module',
-        });
-      } catch (constructError) {
-        if (!mountedRef.current || jobIdRef.current !== jobId) return;
-        const compressionError = workerFailure(
-          `Could not start the compression worker: ${
-            constructError instanceof Error ? constructError.message : 'unknown error'
-          }`,
-          'Refresh the page and try again.'
-        );
-        setError(compressionError);
-        setProgress(errorProgress(null, compressionError.message));
-        setStatus('error');
-        setIsCompressing(false);
-        return;
+      if (workerRef.current) {
+        detachWorker();
+        worker = workerRef.current;
+      } else {
+        try {
+          worker = createWorker();
+        } catch (constructError) {
+          if (!mountedRef.current || jobIdRef.current !== jobId) return;
+          const compressionError = workerFailure(
+            `Could not start the compression worker: ${
+              constructError instanceof Error ? constructError.message : 'unknown error'
+            }`,
+            'Refresh the page and try again.'
+          );
+          setError(compressionError);
+          setProgress(errorProgress(null, compressionError.message));
+          setStatus('error');
+          setIsCompressing(false);
+          return;
+        }
       }
-
-      workerRef.current = worker;
 
       const finishCancelled = () => {
         if (!mountedRef.current || jobIdRef.current !== jobId) return;
         clearCancelTimer();
         cancelRequestedRef.current = false;
-        terminateWorker();
+        detachWorker();
         setProgress((previous) => cancelledProgress(previous));
         setStatus('cancelled');
         setIsCompressing(false);
@@ -232,7 +259,7 @@ export function useCompression(): UseCompressionReturn {
         if (message.type === 'complete') {
           const compressionResult = message.result;
           if (compressionResult.success && compressionResult.blob && compressionResult.report) {
-            terminateWorker();
+            detachWorker();
             setResult(compressionResult);
             setProgress((previous) => completeProgress(previous, compressionResult));
             setError(null);
@@ -247,7 +274,7 @@ export function useCompression(): UseCompressionReturn {
               'Compression finished without producing a file.',
               'Try again with a different target size or resolution.'
             );
-          terminateWorker();
+          detachWorker();
           setResult(compressionResult);
           setError(failure);
           setProgress((previous) => errorProgress(previous, failure.message));
@@ -257,7 +284,7 @@ export function useCompression(): UseCompressionReturn {
         }
 
         if (message.type === 'error') {
-          terminateWorker();
+          detachWorker();
           setError(message.error);
           setProgress((previous) => errorProgress(previous, message.error.message));
           setStatus('error');
@@ -306,7 +333,7 @@ export function useCompression(): UseCompressionReturn {
         if (jobIdRef.current !== jobId) return;
         if (!(reader.result instanceof ArrayBuffer)) {
           readerRef.current = null;
-          terminateWorker();
+          detachWorker();
           const failure = workerFailure(
             'Could not read that file into memory.',
             'Try selecting the file again.'
@@ -331,7 +358,7 @@ export function useCompression(): UseCompressionReturn {
             [reader.result]
           );
         } catch (postError) {
-          terminateWorker();
+          detachWorker();
           const failure = workerFailure(
             `Could not send the video to the compression worker: ${
               postError instanceof Error ? postError.message : 'unknown error'
@@ -349,7 +376,7 @@ export function useCompression(): UseCompressionReturn {
       reader.onerror = () => {
         if (jobIdRef.current !== jobId) return;
         readerRef.current = null;
-        terminateWorker();
+        detachWorker();
         if (cancelRequestedRef.current) {
           finishCancelled();
           return;
@@ -372,7 +399,7 @@ export function useCompression(): UseCompressionReturn {
 
       reader.readAsArrayBuffer(file);
     },
-    [clearCancelTimer, terminateWorker]
+    [clearCancelTimer, createWorker, detachWorker, terminateWorker]
   );
 
   const cancel = useCallback(() => {
@@ -412,13 +439,13 @@ export function useCompression(): UseCompressionReturn {
       readerRef.current.abort();
       readerRef.current = null;
     }
-    terminateWorker();
+    detachWorker();
     setProgress(null);
     setResult(null);
     setError(null);
     setStatus('idle');
     setIsCompressing(false);
-  }, [terminateWorker]);
+  }, [detachWorker]);
 
   return {
     compress,
