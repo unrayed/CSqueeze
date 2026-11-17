@@ -390,6 +390,11 @@ function extractAudioDescription(entry: SampleEntryLike | undefined): Uint8Array
   return null;
 }
 
+function normalizeAudioCodec(codec: string): string {
+  const normalized = codec.trim().toLowerCase();
+  return normalized === 'opus' ? 'opus' : normalized;
+}
+
 function extractVideoDescription(entry: SampleEntryLike | undefined): Uint8Array | null {
   if (!entry) return null;
   if (entry.avcC) {
@@ -546,7 +551,7 @@ function demuxMp4(
         demuxAudio = audioTrack
           ? {
               id: audioTrack.id,
-              codec: audioTrack.codec,
+              codec: normalizeAudioCodec(audioTrack.codec),
               timescale: audioTrack.timescale,
               durationSeconds: Number.isFinite(audioDuration) ? audioDuration : 0,
               nbSamples: audioTrack.nb_samples,
@@ -947,14 +952,19 @@ async function encodeAudio(
       'Mute the audio in Advanced settings to compress video only, or try re-exporting the file.'
     );
   }
-  if (!audio.description) {
+  const needsDescription = audio.codec !== 'opus';
+  if (!audio.description && needsDescription) {
     fail(
       'unsupported-audio',
       `The ${audio.codec} audio track is missing its decoder configuration.`,
       'Mute the audio in Advanced settings to compress video only, or re-export the audio as AAC.'
     );
   }
-  if (!Number.isFinite(audio.sampleRate) || audio.sampleRate <= 0) {
+  let sampleRate = audio.sampleRate;
+  if (audio.codec === 'opus' && (!Number.isFinite(sampleRate) || sampleRate <= 0)) {
+    sampleRate = 48000;
+  }
+  if (!Number.isFinite(sampleRate) || sampleRate <= 0) {
     fail(
       'unsupported-audio',
       'That audio track has an invalid sample rate.',
@@ -965,13 +975,12 @@ async function encodeAudio(
   const sourceChannels = Math.max(1, Math.round(audio.channels));
   const outputChannels: 1 | 2 =
     audioPlan.channels === 1 || sourceChannels === 1 ? 1 : 2;
-  const sampleRate = audio.sampleRate;
   const bitrate = audioPlan.bitrate;
   const decoderConfig: AudioDecoderConfig = {
     codec: audio.codec,
     sampleRate,
     numberOfChannels: sourceChannels,
-    description: audio.description,
+    ...(audio.description ? { description: audio.description } : {}),
   };
 
   try {

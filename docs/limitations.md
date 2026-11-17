@@ -106,7 +106,7 @@ Input video must be decodable by the browser's `VideoDecoder`. The worker extrac
 | AV1 | Depends on browser/platform decoder support; uncommon in MP4 |
 | VP9 | Depends on browser/platform decoder support; uncommon in MP4 |
 
-Audio must be decodable by `AudioDecoder` (AAC and MP3 are common; Opus in MP4 is uncommon). Safari 16.4–18.x has no `AudioDecoder`, so audio tracks cannot be decoded there.
+Audio must be decodable by `AudioDecoder` (AAC and MP3 are common). Opus-in-MP4 tracks are supported when the browser's `AudioDecoder` can decode `opus`; Opus in MP4 is uncommon. Safari 16.4–18.x has no `AudioDecoder`, so audio tracks cannot be decoded there.
 
 ### Output
 
