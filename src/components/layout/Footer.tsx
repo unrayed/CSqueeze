@@ -16,7 +16,7 @@ const trustItems = [
   {
     icon: Globe,
     title: 'Browser-based',
-    description: 'Runs in Chrome, Edge, Brave, Opera, and Chromium',
+    description: 'Runs in Chrome, Edge, Firefox 130+, and Safari 16.4+ (26+ for audio)',
   },
   {
     icon: Code2,

@@ -21,33 +21,39 @@ Live website: https://csqueeze.unray.dpdns.org
 2. Choose a target size and quality preset (Advanced settings expose resolution, frame rate, and audio)
 3. Compress, compare, and download
 
-CSqueeze demuxes the source, decodes video and audio, re-encodes H.264 video and AAC audio, and muxes a fresh MP4. Multiple passes refine the bitrate until the result lands within the selected tolerance. If the target is already larger than the source, it skips encoding and returns the original file.
+CSqueeze demuxes the source, decodes video and, when the browser supports it, audio, re-encodes H.264 video and AAC audio, and muxes a fresh MP4. Multiple passes refine the bitrate until the result lands within the selected tolerance. If the target is already larger than the source, it skips encoding and returns the original file.
 
 ## Browser support
 
-CSqueeze requires WebCodecs and a secure context (HTTPS or localhost). Chromium-based desktop browsers:
+CSqueeze requires WebCodecs and a secure context (HTTPS or localhost). Supported requirements:
 
-- Chrome
-- Edge
-- Brave
-- Opera
-- Chromium
+| Browser | Requirement |
+| --- | --- |
+| Chrome, Edge, Brave, Opera, and other recent Chromium browsers | Recent release with WebCodecs on Windows, macOS, or Linux |
+| Firefox | 130+ on desktop. On Linux, the distribution FFmpeg must include an H.264 encoder (`libx264`) in the common case |
+| Safari | 16.4+ on macOS or iOS for H.264 video encoding; 26+ for audio (mute audio on 16.4–18.x) |
 
-Firefox and Safari are not supported because they do not provide the required WebCodecs audio/video encode APIs.
+Firefox for Android does not support WebCodecs `VideoEncoder`. Safari releases older than 16.4 lack WebCodecs H.264 support. Safari 16.4–18.x has no WebCodecs `AudioDecoder`/`AudioData`, so those versions can compress H.264 video only when audio is muted.
 
 ### Audio codec availability
 
-Audio is re-encoded to AAC through WebCodecs. Chrome exposes AAC encoding through platform codecs, so it is available on Windows and macOS. Chrome on Linux currently exposes only Opus encoding; loading a video with audio there shows an `Unsupported audio` error. Enable **Mute audio** in Advanced settings to compress the video track only. Muting produces an MP4 with no audio track.
+Audio is always encoded to AAC. When the browser exposes a native AAC encoder (Safari 26+, some Chrome/Edge builds), it is used. Otherwise CSqueeze uses a bundled Fraunhofer FDK-AAC WebAssembly encoder: Linux Chromium/Chrome builds without native AAC and all Firefox. Muting is not required on Linux or Firefox to keep audio.
+
+Safari 16.4–18.x cannot decode source audio, so update to Safari 26+ or mute audio.
+
+The WebAssembly fallback encodes audio only; it is not a full-media ffmpeg.wasm fallback. It adds CPU time for long audio. The bundled FDK-AAC code is licensed MIT AND FDK-AAC; the FDK license requires its notice and grants no patent license.
+
+Source audio still needs an audio track the browser can decode. Unusual codecs may fail; enable **Mute audio** in Advanced settings to produce an MP4 with no audio track.
 
 ## Supported formats
 
 | Container | Extensions | Video codecs |
 | --- | --- | --- |
-| MP4 | `.mp4` | Whatever the browser can decode (typically H.264; HEVC/AV1 depend on platform support) |
-| QuickTime | `.mov` | Same as above |
-| M4V | `.m4v` | Same as above |
+| MP4 | `.mp4` | H.264 reliable; HEVC, AV1, and VP9 depend on browser/platform decoder support |
+| QuickTime | `.mov` | Same as MP4 |
+| M4V | `.m4v` | Same as MP4 |
 
-Output is always MP4 / H.264 / AAC. WebM, MKV, and AVI are not accepted; convert them to MP4 first.
+Output is always MP4 / H.264 / AAC. Source video must be decodable by the browser's `VideoDecoder`: H.264 is the reliable input, while HEVC, AV1, and VP9 depend on browser/platform decoder support. VP9 and AV1 in MP4 are uncommon. WebM, MKV, and AVI are not accepted; convert them to MP4 first.
 
 ## Development
 
@@ -80,10 +86,11 @@ The app is available at `http://localhost:5173`.
 - **Build**: Vite
 - **Styling**: Tailwind CSS
 - **Video processing**: WebCodecs API, mp4box.js (demux), mp4-muxer (mux)
+- **Audio fallback**: Fraunhofer FDK-AAC WebAssembly encoder when native AAC is unavailable
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE). Bundled FDK-AAC notice: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ---
 

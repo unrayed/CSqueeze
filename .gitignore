@@ -28,6 +28,10 @@ dist-ssr
 .env.local
 .env.*.local
 
+# Local capture artifacts (never serve or commit)
+mitm_mcp_traffic.db
+public/mitm_mcp_traffic.db
+
 /context
 .github
 .github/workflows

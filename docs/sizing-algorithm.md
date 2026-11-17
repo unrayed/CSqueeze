@@ -121,14 +121,15 @@ The worker always returns the best completed attempt when one exists, even if it
 Encoding/decoding/muxing failures are returned as structured errors with a code and suggestion. Common causes:
 
 - container outside MP4/MOV/M4V
-- source codec the browser cannot decode
-- AAC encoder unavailable (for example Chrome on Linux)
+- source video codec the browser's `VideoDecoder` cannot decode on this platform (H.264 is the reliable input; HEVC, AV1, and VP9 depend on browser/platform support)
+- source audio the browser cannot decode, or both native AAC and FDK-AAC WebAssembly encoding fail (Safari 16.4–18.x has no WebCodecs audio decode)
 - target too small for the audio budget plus the 100 kbps video floor
 
 ## Tips
 
 1. Longer videos need larger targets.
 2. Balanced/Best engage the resolution ladder, which usually beats squeezing 1080p into a tiny bitrate.
-3. Mute audio when the target is tight or when AAC encoding is unavailable.
+3. Mute audio when the target is tight or the source audio cannot be decoded.
 4. Use Fast when you want to keep source resolution and accept a looser fit.
 5. Check the report: resolution, fps, audio, and pass count explain what the encoder did.
+6. Safari 16.4–18.x requires muted audio; Safari 26+ supports AAC audio.

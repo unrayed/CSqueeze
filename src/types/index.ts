@@ -91,6 +91,8 @@ export interface CompressionError {
   suggestion?: string;
 }
 
+export type AudioEncoderKind = 'webcodecs' | 'fdk-wasm';
+
 export interface CompressionReport {
   targetBytes: number;
   outputBytes: number;
@@ -103,6 +105,7 @@ export interface CompressionReport {
   audioCodec: string | null;
   audioBitrate: number | null;
   audioChannels: number;
+  audioEncoder: AudioEncoderKind | null;
   passes: number;
   elapsedMs: number;
   hitTarget: boolean;

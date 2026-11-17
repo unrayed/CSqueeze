@@ -1,19 +1,15 @@
-import { useState, useEffect } from 'react';
-import { AlertTriangle, X, Chrome } from 'lucide-react';
+import { useEffect, useId, useState } from 'react';
+import { AlertTriangle, X } from 'lucide-react';
 import {
   cn,
-  isAudioWebCodecsSupported,
   isWebCodecsSupported,
-  supportsAudioEncoding,
   supportsVideoDecoding,
   supportsVideoEncoding,
 } from '../lib/utils';
 
-type WarningType =
-  | 'insecure'
-  | 'unsupported-browser'
-  | 'missing-webcodecs'
-  | 'missing-audio';
+type WarningType = 'insecure' | 'missing-video' | 'missing-audio-decode';
+
+const DISMISS_KEY = 'browserWarningDismissed';
 
 function isSecureContext(): boolean {
   return (
@@ -24,26 +20,36 @@ function isSecureContext(): boolean {
   );
 }
 
-function isChromiumBrowser(): boolean {
-  if (typeof navigator === 'undefined') return false;
+function supportsAudioDecoding(): boolean {
+  return typeof AudioDecoder !== 'undefined' && typeof AudioData !== 'undefined';
+}
 
-  const ua = navigator.userAgent;
-  if (/Firefox|FxiOS/i.test(ua)) return false;
-  if (/Safari/i.test(ua) && !/Chrome|Chromium|CriOS|Edg|OPR|Brave/i.test(ua)) {
+function wasWarningDismissed(): boolean {
+  try {
+    return sessionStorage.getItem(DISMISS_KEY) === 'true';
+  } catch {
     return false;
   }
-  return /Chrome|Chromium|CriOS|Edg|OPR|Brave/i.test(ua);
+}
+
+function rememberWarningDismissed() {
+  try {
+    sessionStorage.setItem(DISMISS_KEY, 'true');
+  } catch {
+    // Storage can be unavailable in private or restricted modes; dismissal
+    // still applies for the current page load.
+  }
 }
 
 export function BrowserCheck() {
   const [dismissed, setDismissed] = useState(false);
   const [warningType, setWarningType] = useState<WarningType | null>(null);
+  const titleId = useId();
 
   useEffect(() => {
     let cancelled = false;
 
-    const wasDismissed = sessionStorage.getItem('browserWarningDismissed');
-    if (wasDismissed) {
+    if (wasWarningDismissed()) {
       setDismissed(true);
       return;
     }
@@ -53,12 +59,9 @@ export function BrowserCheck() {
         if (!cancelled) setWarningType('insecure');
         return;
       }
-      if (!isChromiumBrowser()) {
-        if (!cancelled) setWarningType('unsupported-browser');
-        return;
-      }
+
       if (!isWebCodecsSupported()) {
-        if (!cancelled) setWarningType('missing-webcodecs');
+        if (!cancelled) setWarningType('missing-video');
         return;
       }
 
@@ -68,18 +71,14 @@ export function BrowserCheck() {
       ]);
 
       if (cancelled) return;
+
       if (!canEncodeVideo || !canDecodeVideo) {
-        setWarningType('missing-webcodecs');
-        return;
-      }
-      if (!isAudioWebCodecsSupported()) {
-        setWarningType('missing-audio');
+        setWarningType('missing-video');
         return;
       }
 
-      const canEncodeAudio = await supportsAudioEncoding();
-      if (!cancelled && !canEncodeAudio) {
-        setWarningType('missing-audio');
+      if (!supportsAudioDecoding()) {
+        setWarningType('missing-audio-decode');
       }
     };
 
@@ -91,17 +90,18 @@ export function BrowserCheck() {
 
   const handleDismiss = () => {
     setDismissed(true);
-    sessionStorage.setItem('browserWarningDismissed', 'true');
+    rememberWarningDismissed();
   };
 
   if (dismissed || !warningType) return null;
 
-  const isAudioWarning = warningType === 'missing-audio';
-  const showChromeLink =
-    warningType === 'unsupported-browser' || warningType === 'missing-webcodecs';
+  const isAudioWarning = warningType === 'missing-audio-decode';
+  const isHardFailure = warningType === 'insecure' || warningType === 'missing-video';
 
   return (
     <div
+      role={isHardFailure ? 'alert' : 'status'}
+      aria-labelledby={titleId}
       className={cn(
         'border-b',
         isAudioWarning
@@ -120,82 +120,65 @@ export function BrowserCheck() {
                   : 'text-red-700 dark:text-red-400'
               )}
               strokeWidth={1.5}
+              aria-hidden="true"
             />
             <div>
               {warningType === 'insecure' ? (
                 <>
-                  <p className="text-sm font-medium text-red-900 dark:text-red-100">
+                  <p
+                    id={titleId}
+                    className="text-sm font-medium text-red-900 dark:text-red-100"
+                  >
                     Secure connection required
                   </p>
                   <p className="text-sm text-red-800 dark:text-red-200">
-                    Compression will not run over an insecure connection. Open
-                    this page over HTTPS or on localhost.
+                    Compression needs HTTPS or localhost. Reopen this page over
+                    HTTPS or on localhost.
                   </p>
                 </>
-              ) : warningType === 'unsupported-browser' ? (
+              ) : warningType === 'missing-video' ? (
                 <>
-                  <p className="text-sm font-medium text-red-900 dark:text-red-100">
-                    Browser not supported
+                  <p
+                    id={titleId}
+                    className="text-sm font-medium text-red-900 dark:text-red-100"
+                  >
+                    Video compression not supported
                   </p>
                   <p className="text-sm text-red-800 dark:text-red-200">
-                    Compression runs in Chromium only: Chrome, Edge, Brave,
-                    Opera, or Chromium. Firefox and Safari are not supported
-                    because they do not provide the WebCodecs video encoding
-                    this tool needs.
-                  </p>
-                </>
-              ) : warningType === 'missing-webcodecs' ? (
-                <>
-                  <p className="text-sm font-medium text-red-900 dark:text-red-100">
-                    WebCodecs unavailable
-                  </p>
-                  <p className="text-sm text-red-800 dark:text-red-200">
-                    This browser cannot decode and encode H.264 video with
-                    WebCodecs. Update it, or use a recent Chrome, Edge, Brave,
-                    Opera, or Chromium build.
+                    This browser cannot encode or decode H.264 with WebCodecs.
+                    Update it, or use a recent Chrome, Edge, Firefox, or Safari.
                   </p>
                 </>
               ) : (
                 <>
-                  <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                    Audio encoding unavailable
+                  <p
+                    id={titleId}
+                    className="text-sm font-medium text-amber-900 dark:text-amber-100"
+                  >
+                    Audio decoding unavailable
                   </p>
                   <p className="text-sm text-amber-800 dark:text-amber-200">
-                    This browser cannot encode AAC audio through WebCodecs.
-                    Videos without an audio track still work, and you can mute
-                    the audio before compressing. Chromium on Linux currently
-                    has no AAC encoder. Chrome and Edge on Windows or macOS
-                    usually do.
+                    This browser cannot decode source audio. Videos without
+                    audio still compress; mute audio before compressing. On
+                    Safari before 26, updating to Safari 26+ also works.
                   </p>
                 </>
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {showChromeLink && (
-              <a
-                href="https://www.google.com/chrome/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-red-300 bg-red-100 px-2.5 text-sm font-medium text-red-900 transition-colors duration-150 ease-out hover:bg-red-200 dark:border-red-800 dark:bg-red-900/50 dark:text-red-100 dark:hover:bg-red-900"
-              >
-                <Chrome className="h-4 w-4" strokeWidth={1.5} />
-                Get Chrome
-              </a>
+          <button
+            type="button"
+            onClick={handleDismiss}
+            className={cn(
+              'rounded-lg p-1.5 transition-colors duration-150 ease-out',
+              isAudioWarning
+                ? 'text-amber-700 hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-900/50'
+                : 'text-red-700 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/50'
             )}
-            <button
-              onClick={handleDismiss}
-              className={cn(
-                'rounded-lg p-1.5 transition-colors duration-150 ease-out',
-                isAudioWarning
-                  ? 'text-amber-700 hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-900/50'
-                  : 'text-red-700 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900/50'
-              )}
-              aria-label="Dismiss"
-            >
-              <X className="h-4 w-4" strokeWidth={1.5} />
-            </button>
-          </div>
+            aria-label="Dismiss browser capability warning"
+          >
+            <X className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
+          </button>
         </div>
       </div>
     </div>

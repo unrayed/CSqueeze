@@ -4,15 +4,36 @@ Common issues and solutions for CSqueeze.
 
 ## Browser Issues
 
-### "Use a Chromium-based browser" message
+### "Browser not supported" message
 
-**Cause**: WebCodecs is unavailable.
+**Cause**: WebCodecs is unavailable, usually because the browser is older than the supported requirements.
 
 **Solutions**:
 
-1. Use Chrome, Edge, Brave, Opera, or Chromium on desktop
-2. Update to a recent browser version
-3. Firefox and Safari are not supported; no flag enables the required encode APIs
+1. Use a recent Chrome or Edge on Windows, macOS, or Linux
+2. Use Firefox 130+ on desktop; on Linux the distribution FFmpeg must include an H.264 encoder (`libx264`)
+3. Use Safari 16.4+ on macOS or iOS; Safari 26+ is required for audio
+4. Update the browser and confirm the page runs over HTTPS or localhost
+5. Firefox for Android is not supported because it lacks WebCodecs `VideoEncoder`
+
+### Firefox on Linux cannot encode H.264
+
+**Cause**: Firefox uses the system FFmpeg for H.264 WebCodecs encoding. A distribution FFmpeg build without an H.264 encoder such as `libx264` fails the encode probe.
+
+**Solutions**:
+
+1. Install the distribution FFmpeg package that includes `libx264` (common distribution builds do)
+2. Confirm the encoder list includes an H.264 encoder: `ffmpeg -encoders`
+3. Use Chrome or Edge on Linux instead
+
+### Safari can compress video but audio is unavailable
+
+**Cause**: Safari 16.4–18.x supports WebCodecs H.264 video but has no WebCodecs `AudioDecoder`/`AudioData`, so source audio cannot be decoded.
+
+**Solutions**:
+
+1. Enable **Mute audio** in Advanced settings to compress the video track only
+2. Update to Safari 26+ for AAC audio
 
 ### Page crashes or freezes
 
@@ -41,13 +62,14 @@ Common issues and solutions for CSqueeze.
 
 ### "Unsupported audio"
 
-**Cause**: The browser cannot decode the source audio, or cannot encode AAC with these settings. Chrome on Linux currently exposes only Opus encoding, so AAC encode is unavailable there.
+**Cause**: The browser cannot decode the source audio, or both the native AAC encoder and the FDK-AAC WebAssembly fallback failed to encode it.
 
 **Solutions**:
 
 1. Enable **Mute audio** in Advanced settings to compress the video track only
 2. Re-export the source with AAC audio
-3. Use a platform/browser with AAC encoding (Chrome on Windows or macOS)
+3. On Safari 16.4–18.x, mute audio or update to Safari 26+
+4. Try another supported browser; some builds expose a native AAC encoder
 
 ### Output quality is poor
 
@@ -95,12 +117,12 @@ Common issues and solutions for CSqueeze.
 
 ### "Unsupported video codec"
 
-**Cause**: The browser's `VideoDecoder` cannot decode the source codec.
+**Cause**: The browser's `VideoDecoder` does not support the source video codec on this platform.
 
 **Solutions**:
 
-1. Re-export as H.264 MP4
-2. Try a browser/platform with support for that codec (HEVC/AV1 depend on the OS and GPU)
+1. Re-export as H.264 MP4, the most reliable input
+2. Try a browser/platform whose `VideoDecoder` supports the codec (HEVC, AV1, and VP9 depend on browser/platform support; VP9 and AV1 in MP4 are uncommon)
 3. Try a different file
 
 ### File won't select
@@ -134,10 +156,12 @@ The two videos share one playhead. If one lags after seeking, press pause and pl
 ## Performance Tips
 
 1. Close other tabs to free RAM
-2. Use Chrome or Edge desktop for the most tested path
+2. Use a recent desktop browser for long clips
 3. Prefer desktop over mobile for long clips
 4. Test with short clips first
 5. Set realistic targets: 8 MB for a 5-minute video is extremely aggressive
+
+Browsers without a native AAC encoder use the FDK-AAC WebAssembly fallback, which adds CPU time proportional to audio duration.
 
 ### Typical processing times
 

@@ -191,6 +191,18 @@ Create `public/_redirects`:
 
 ---
 
+## Browser Requirements
+
+CSqueeze stays a static client-side app; no backend or special server runtime is required.
+
+| Browser | Requirement |
+| --- | --- |
+| Chrome / Edge | Recent release with WebCodecs on Windows, macOS, or Linux |
+| Firefox | 130+ desktop; Linux needs a distribution FFmpeg with an H.264 encoder (`libx264`) |
+| Safari | 16.4+ on macOS or iOS for H.264 video encoding; 26+ for audio (mute audio on 16.4–18.x) |
+
+These are support requirements, not a tested device matrix.
+
 ## Security Headers
 
 For enhanced security, configure these headers:
@@ -206,17 +218,17 @@ Create `public/_headers`:
   Permissions-Policy: camera=(), microphone=(), geolocation=()
 ```
 
-### For SharedArrayBuffer Support (Future)
+### WebAssembly and Content Security Policy
 
-If you need SharedArrayBuffer for advanced optimizations:
+The FDK-AAC fallback embeds the WebAssembly binary inside `src/fdk.wasm.js` and loads it with a dynamic import; there is no separate WebAssembly binary to configure or serve. Normal static JavaScript asset serving is sufficient.
+
+CSqueeze does not require SharedArrayBuffer, so COOP/COEP headers are not needed.
+
+If the deployment uses a strict `Content-Security-Policy`, allow WebAssembly compilation with `'wasm-unsafe-eval'` in `script-src`:
 
 ```
-/*
-  Cross-Origin-Opener-Policy: same-origin
-  Cross-Origin-Embedder-Policy: require-corp
+Content-Security-Policy: script-src 'self' 'wasm-unsafe-eval'
 ```
-
-⚠️ Note: Enabling COEP may break external resources without proper CORS headers.
 
 ---
 
@@ -238,7 +250,7 @@ If you need SharedArrayBuffer for advanced optimizations:
 
 WebCodecs requires:
 - HTTPS (or localhost)
-- Chromium-based browser
+- A supported browser from the requirements above
 
 Check browser compatibility on your deployment URL.
 

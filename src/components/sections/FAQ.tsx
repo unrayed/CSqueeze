@@ -27,7 +27,7 @@ const faqs = [
   {
     question: 'Which browsers are supported?',
     answer:
-      'Chrome, Edge, Brave, Opera, and Chromium. Firefox and Safari are not supported because they do not provide the WebCodecs video encoding this tool needs.',
+      'Recent Chrome, Edge, Brave, or Opera on Windows, macOS, or Linux; Firefox 130+ on desktop; or Safari 16.4+ on macOS and iOS. On Linux, Firefox needs a system FFmpeg with an H.264 encoder. Safari 16.4–18.x supports H.264 video only; Safari 26+ adds audio. Firefox for Android cannot encode video with WebCodecs.',
   },
   {
     question: 'Does it work offline?',
@@ -42,7 +42,7 @@ const faqs = [
   {
     question: 'What happens to audio?',
     answer:
-      'Audio is kept when the browser can decode it. If it cannot, the tool reports the problem. You can also mute audio to leave more of the target for video.',
+      'Audio is kept as AAC when the source track can be decoded. Browsers with a native AAC encoder use it; others use a bundled FDK-AAC WebAssembly encoder, so Linux and Firefox keep the audio track. Safari 16.4–18.x cannot decode source audio; use Mute audio there or update to Safari 26+. Muting remains useful for unusual source codecs or tight targets.',
   },
   {
     question: 'Can I use this for commercial projects?',

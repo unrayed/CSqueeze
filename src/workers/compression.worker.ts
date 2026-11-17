@@ -20,8 +20,15 @@ import {
   resolveSettings,
 } from '../lib/bitrate';
 import { AUTO_FPS_FALLBACK, ENCODING, FILE_LIMITS, QUALITY_PRESETS } from '../lib/constants';
+import {
+  buildAacAsc,
+  encodeWasmAac,
+  parseAdtsFrames,
+} from '../lib/aacFallback';
+import type { AdtsFrame, WasmAacResult } from '../lib/aacFallback';
 import { detectContainer, displayDimensions, rotationFromMatrix } from '../lib/media';
 import type {
+  AudioEncoderKind,
   CompressionError,
   CompressionErrorCode,
   CompressionProgress,
@@ -239,12 +246,19 @@ interface DemuxResult {
   sourceFps: number;
 }
 
+interface EncodedAudioFrame {
+  data: Uint8Array;
+  timestampUs: number;
+  durationUs: number;
+}
+
 interface EncodedAudio {
-  chunks: EncodedAudioChunk[];
-  metadata: EncodedAudioChunkMetadata | null;
+  frames: EncodedAudioFrame[];
+  asc: Uint8Array;
   sampleRate: number;
   channels: number;
   bitrate: number;
+  strategy: AudioEncoderKind;
 }
 
 interface AttemptOutput {
@@ -659,6 +673,93 @@ function videoDecoderConfig(
   return config;
 }
 
+const H264_SMOKE_TIMEOUT_MS = 4_000;
+const H264_SMOKE_MAX_DIMENSION = 1280;
+
+function clampSmokeDimensions(
+  width: number,
+  height: number
+): { width: number; height: number } {
+  const safeWidth = Math.max(1, width);
+  const safeHeight = Math.max(1, height);
+  const longest = Math.max(safeWidth, safeHeight);
+  const scale = longest > H264_SMOKE_MAX_DIMENSION ? H264_SMOKE_MAX_DIMENSION / longest : 1;
+  const even = (value: number): number => Math.max(2, Math.round(value / 2) * 2);
+  return { width: even(safeWidth * scale), height: even(safeHeight * scale) };
+}
+
+function smokeEncodeH264(
+  codec: string,
+  width: number,
+  height: number,
+  framerate: number
+): Promise<boolean> {
+  return new Promise((resolve) => {
+    let encoder: VideoEncoder | null = null;
+    let frame: VideoFrame | null = null;
+    let settled = false;
+    let producedChunk = false;
+
+    const finish = (supported: boolean): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (frame) {
+        try {
+          frame.close();
+        } catch {
+          // already closed
+        }
+      }
+      if (encoder) {
+        try {
+          encoder.close();
+        } catch {
+          // already closed
+        }
+      }
+      resolve(supported);
+    };
+
+    const timer = setTimeout(() => finish(false), H264_SMOKE_TIMEOUT_MS);
+
+    try {
+      const canvas = new OffscreenCanvas(width, height);
+      const context = canvas.getContext('2d', { alpha: false });
+      if (!context) {
+        finish(false);
+        return;
+      }
+      context.fillStyle = '#000';
+      context.fillRect(0, 0, width, height);
+
+      encoder = new VideoEncoder({
+        output: () => {
+          producedChunk = true;
+        },
+        error: () => finish(false),
+      });
+      encoder.configure({
+        codec,
+        width,
+        height,
+        bitrate: 1_000_000,
+        framerate,
+        bitrateMode: 'variable',
+        avc: { format: 'avc' },
+      });
+      frame = new VideoFrame(canvas, { timestamp: 0 });
+      encoder.encode(frame, { keyFrame: true });
+      encoder
+        .flush()
+        .then(() => finish(producedChunk))
+        .catch(() => finish(false));
+    } catch {
+      finish(false);
+    }
+  });
+}
+
 async function chooseH264Codec(
   width: number,
   height: number,
@@ -668,30 +769,37 @@ async function chooseH264Codec(
     fail(
       'unsupported-codec',
       'This browser does not support video encoding.',
-      'Use a recent version of Chrome or Edge.'
+      'Use a recent Chrome, Edge, Firefox, or Safari, or try a smaller resolution.'
     );
   }
+
+  const { width: smokeWidth, height: smokeHeight } = clampSmokeDimensions(width, height);
 
   for (const codec of H264_CODECS) {
     try {
       const support = await VideoEncoder.isConfigSupported({
         codec,
-        width,
-        height,
+        width: smokeWidth,
+        height: smokeHeight,
         bitrate: 1_000_000,
         framerate,
         bitrateMode: 'variable',
+        avc: { format: 'avc' },
       });
-      if (support.supported) return codec;
+      if (!support.supported) continue;
     } catch {
-      // Try the next profile.
+      continue;
+    }
+
+    if (await smokeEncodeH264(codec, smokeWidth, smokeHeight, framerate)) {
+      return codec;
     }
   }
 
   fail(
     'unsupported-codec',
-    'No supported H.264 encoder profile was found for this video size.',
-    'Try a smaller resolution or use a browser with H.264 encoding support.'
+    'No working H.264 encoder profile was found for this video size.',
+    'Use a recent Chrome, Edge, Firefox, or Safari, or try a smaller resolution.'
   );
 }
 
@@ -701,9 +809,12 @@ function sleep(ms: number): Promise<void> {
 
 async function waitForCapacity(
   decoder: { decodeQueueSize: number },
-  encoder: { encodeQueueSize: number }
+  encoder: { encodeQueueSize: number } | null
 ): Promise<void> {
-  while (decoder.decodeQueueSize > MAX_DECODE_QUEUE || encoder.encodeQueueSize > MAX_ENCODE_QUEUE) {
+  while (
+    decoder.decodeQueueSize > MAX_DECODE_QUEUE ||
+    (encoder !== null && encoder.encodeQueueSize > MAX_ENCODE_QUEUE)
+  ) {
     throwIfCancelled();
     await sleep(4);
   }
@@ -718,27 +829,94 @@ function durationUsFromSample(sample: MP4Sample): number {
   return Math.max(1, Math.round((sample.duration / sample.timescale) * 1_000_000));
 }
 
-function downmixToMono(frame: AudioData): AudioData {
+function readPlanar(frame: AudioData): Float32Array[] {
   const frameCount = frame.numberOfFrames;
   const channelCount = Math.max(1, frame.numberOfChannels);
-  const mixed = new Float32Array(frameCount);
-  const plane = new Float32Array(frameCount);
+  const planes: Float32Array[] = [];
 
   for (let channel = 0; channel < channelCount; channel += 1) {
+    const plane = new Float32Array(frameCount);
     frame.copyTo(plane, { planeIndex: channel, format: 'f32-planar' });
-    for (let index = 0; index < frameCount; index += 1) {
-      mixed[index] = (mixed[index] ?? 0) + (plane[index] ?? 0) / channelCount;
-    }
+    planes.push(plane);
   }
 
+  return planes;
+}
+
+function downmixPlanar(planes: Float32Array[], outputChannels: 1 | 2): Float32Array[] {
+  const frameCount = planes[0]?.length ?? 0;
+
+  if (outputChannels === 1) {
+    const mixed = new Float32Array(frameCount);
+    const channelCount = Math.max(1, planes.length);
+    for (const plane of planes) {
+      for (let index = 0; index < frameCount; index += 1) {
+        mixed[index] = (mixed[index] ?? 0) + (plane[index] ?? 0) / channelCount;
+      }
+    }
+    return [mixed];
+  }
+
+  if (planes.length <= 2) {
+    const left = planes[0] ?? new Float32Array(frameCount);
+    const right = planes[1] ?? left;
+    return [left, right];
+  }
+
+  const left = new Float32Array(frameCount);
+  const right = new Float32Array(frameCount);
+  const frontLeft = planes[0];
+  const frontRight = planes[1];
+  const center = planes[2];
+  const surroundLeft = planes[4];
+  const surroundRight = planes[5];
+
+  for (let index = 0; index < frameCount; index += 1) {
+    let leftSample = frontLeft?.[index] ?? 0;
+    let rightSample = frontRight?.[index] ?? leftSample;
+    if (center) {
+      const centerSample = 0.70710678 * (center[index] ?? 0);
+      leftSample += centerSample;
+      rightSample += centerSample;
+    }
+    if (surroundLeft) leftSample += 0.5 * (surroundLeft[index] ?? 0);
+    if (surroundRight) rightSample += 0.5 * (surroundRight[index] ?? 0);
+    left[index] = Math.max(-1, Math.min(1, leftSample));
+    right[index] = Math.max(-1, Math.min(1, rightSample));
+  }
+
+  return [left, right];
+}
+
+function planarToAudioData(
+  planes: Float32Array[],
+  sampleRate: number,
+  numberOfFrames: number,
+  timestamp: number
+): AudioData {
+  const channelCount = planes.length;
+  const data = new Float32Array(numberOfFrames * channelCount);
+  for (let channel = 0; channel < channelCount; channel += 1) {
+    data.set(planes[channel] ?? new Float32Array(numberOfFrames), channel * numberOfFrames);
+  }
   return new AudioData({
     format: 'f32-planar',
-    sampleRate: frame.sampleRate,
-    numberOfFrames: frameCount,
-    numberOfChannels: 1,
-    timestamp: frame.timestamp,
-    data: mixed,
+    sampleRate,
+    numberOfFrames,
+    numberOfChannels: channelCount,
+    timestamp,
+    data,
   });
+}
+
+function downmixFrame(frame: AudioData, outputChannels: 1 | 2): AudioData {
+  const planes = downmixPlanar(readPlanar(frame), outputChannels);
+  return planarToAudioData(
+    planes,
+    frame.sampleRate,
+    frame.numberOfFrames,
+    frame.timestamp
+  );
 }
 
 async function encodeAudio(
@@ -752,40 +930,43 @@ async function encodeAudio(
   }
   throwIfCancelled();
 
-  if (typeof AudioDecoder === 'undefined' || typeof AudioEncoder === 'undefined') {
+  if (typeof AudioDecoder === 'undefined' || typeof AudioData === 'undefined') {
     fail(
       'unsupported-audio',
-      'This browser does not support audio decoding and encoding.',
-      'Use a recent version of Chrome or Edge, or mute the audio.'
+      'This browser cannot decode audio for compression.',
+      'Mute the audio in Advanced settings to compress video only, or use a recent Chrome, Edge, Firefox, or Safari.'
     );
   }
   if (demux.audioSamples.length === 0) {
     fail(
       'unsupported-audio',
       'That file has an audio track but no readable audio samples.',
-      'Try re-exporting the file, or mute the audio.'
+      'Mute the audio in Advanced settings to compress video only, or try re-exporting the file.'
     );
   }
   if (!audio.description) {
     fail(
       'unsupported-audio',
       `The ${audio.codec} audio track is missing its decoder configuration.`,
-      'Re-export the audio as AAC, or mute the audio.'
+      'Mute the audio in Advanced settings to compress video only, or re-export the audio as AAC.'
     );
   }
   if (!Number.isFinite(audio.sampleRate) || audio.sampleRate <= 0) {
     fail(
       'unsupported-audio',
       'That audio track has an invalid sample rate.',
-      'Re-export the audio as AAC, or mute the audio.'
+      'Mute the audio in Advanced settings to compress video only, or re-export the audio as AAC.'
     );
   }
 
   const sourceChannels = Math.max(1, Math.round(audio.channels));
-  const outputChannels = audioPlan.channels === 1 ? 1 : sourceChannels;
+  const outputChannels: 1 | 2 =
+    audioPlan.channels === 1 || sourceChannels === 1 ? 1 : 2;
+  const sampleRate = audio.sampleRate;
+  const bitrate = audioPlan.bitrate;
   const decoderConfig: AudioDecoderConfig = {
     codec: audio.codec,
-    sampleRate: audio.sampleRate,
+    sampleRate,
     numberOfChannels: sourceChannels,
     description: audio.description,
   };
@@ -796,7 +977,7 @@ async function encodeAudio(
       fail(
         'unsupported-audio',
         `This browser cannot decode the source audio (${audio.codec}).`,
-        'Mute the audio or re-export the audio as AAC.'
+        'Mute the audio in Advanced settings to compress video only, or re-export the audio as AAC.'
       );
     }
   } catch (error) {
@@ -804,41 +985,81 @@ async function encodeAudio(
     fail(
       'unsupported-audio',
       `Could not check support for the source audio (${audio.codec}).`,
-      'Mute the audio or re-export the audio as AAC.'
+      'Mute the audio in Advanced settings to compress video only, or re-export the audio as AAC.'
     );
   }
 
-  const encoderConfig: AudioEncoderConfig = {
-    codec: 'mp4a.40.2',
-    sampleRate: audio.sampleRate,
-    numberOfChannels: outputChannels,
-    bitrate: audioPlan.bitrate,
-  };
-
+  let asc: Uint8Array;
   try {
-    const support = await AudioEncoder.isConfigSupported(encoderConfig);
-    if (!support.supported) {
-      fail(
-        'unsupported-audio',
-        'This browser cannot encode AAC audio with these settings.',
-        'Mute the audio in Advanced settings, or use a browser that can encode AAC.'
-      );
-    }
+    asc = buildAacAsc(sampleRate, outputChannels);
   } catch (error) {
     if (error instanceof WorkerCompressionError) throw error;
     fail(
       'unsupported-audio',
-      'Could not check support for AAC audio encoding.',
-      'Mute the audio in Advanced settings, or use a browser that can encode AAC.'
+      `The AAC encoder cannot represent ${sampleRate} Hz ${outputChannels}-channel audio.`,
+      'Mute the audio in Advanced settings to compress video only, or re-export the audio at 44.1 kHz or 48 kHz.'
     );
   }
 
-  const chunks: EncodedAudioChunk[] = [];
-  let metadata: EncodedAudioChunkMetadata | null = null;
+  let strategy: AudioEncoderKind = 'fdk-wasm';
+  if (typeof AudioEncoder !== 'undefined') {
+    try {
+      const nativeSupport = await AudioEncoder.isConfigSupported({
+        codec: 'mp4a.40.2',
+        sampleRate,
+        numberOfChannels: outputChannels,
+        bitrate,
+      });
+      if (nativeSupport.supported === true) strategy = 'webcodecs';
+    } catch {
+      strategy = 'fdk-wasm';
+    }
+  }
+  const useNative = strategy === 'webcodecs';
+
+  const frames: EncodedAudioFrame[] = [];
   let callbackError: CompressionError | null = null;
   const getCallbackError = (): CompressionError | null => callbackError;
   const audioStartUs = usFromSample(demux.audioSamples[0] as MP4Sample);
   const audioEndUs = audioStartUs + Math.round(demux.durationSeconds * 1_000_000);
+
+  let pcmPlanes: Float32Array[] = [];
+  let pcmWritten = 0;
+  const pcmLimit = useNative
+    ? 0
+    : Math.max(0, Math.ceil(demux.durationSeconds * sampleRate));
+  if (!useNative) {
+    pcmPlanes = Array.from(
+      { length: outputChannels },
+      () => new Float32Array(pcmLimit)
+    );
+  }
+
+  let encoder: AudioEncoder | null = null;
+  if (useNative) {
+    encoder = new AudioEncoder({
+      output: (chunk) => {
+        if (cancelled || callbackError) return;
+        if (chunk.timestamp >= audioEndUs) return;
+
+        const remaining = audioEndUs - chunk.timestamp;
+        const fallbackDurationUs = (1024 / sampleRate) * 1_000_000;
+        const rawDurationUs = chunk.duration ?? fallbackDurationUs;
+        const durationUs = Math.max(1, Math.min(rawDurationUs, remaining));
+        const data = new Uint8Array(chunk.byteLength);
+        chunk.copyTo(data);
+        frames.push({ data, timestampUs: chunk.timestamp, durationUs });
+      },
+      error: (error) => {
+        callbackError ??= {
+          code: 'encode-failed',
+          message: `AAC encoding failed: ${error.message}`,
+          suggestion:
+            'Mute the audio in Advanced settings to create a video-only file, or try a different browser or source file.',
+        };
+      },
+    });
+  }
 
   const decoder = new AudioDecoder({
     output: (frame) => {
@@ -851,22 +1072,45 @@ async function encodeAudio(
         return;
       }
 
-      let encodedFrame: AudioData | null = null;
       try {
-        encodedFrame =
-          outputChannels === 1 && frame.numberOfChannels > 1
-            ? downmixToMono(frame)
-            : frame;
-        encoder.encode(encodedFrame);
+        if (useNative && encoder) {
+          let encodedFrame: AudioData | null = null;
+          try {
+            encodedFrame =
+              frame.numberOfChannels === outputChannels
+                ? frame
+                : downmixFrame(frame, outputChannels);
+            encoder.encode(encodedFrame);
+          } finally {
+            if (encodedFrame && encodedFrame !== frame) encodedFrame.close();
+          }
+        } else {
+          const sourcePlanes = readPlanar(frame);
+          const planes =
+            frame.numberOfChannels === outputChannels
+              ? sourcePlanes
+              : downmixPlanar(sourcePlanes, outputChannels);
+          const remaining = pcmLimit - pcmWritten;
+          if (remaining > 0) {
+            const take = Math.min(remaining, frame.numberOfFrames);
+            for (let channel = 0; channel < outputChannels; channel += 1) {
+              const destination = pcmPlanes[channel];
+              const source = planes[channel];
+              if (destination && source) {
+                destination.set(source.subarray(0, take), pcmWritten);
+              }
+            }
+            pcmWritten += take;
+          }
+        }
       } catch (error) {
         const compressionError = toCompressionError(error);
         callbackError = {
           code: compressionError.code === 'unknown' ? 'encode-failed' : compressionError.code,
-          message: `Audio encoding failed: ${compressionError.message}`,
+          message: `Audio processing failed: ${compressionError.message}`,
           ...(compressionError.suggestion ? { suggestion: compressionError.suggestion } : {}),
         };
       } finally {
-        if (encodedFrame && encodedFrame !== frame) encodedFrame.close();
         frame.close();
       }
     },
@@ -874,47 +1118,25 @@ async function encodeAudio(
       callbackError ??= {
         code: 'decode-failed',
         message: `Audio decoding failed: ${error.message}`,
-        suggestion: 'Mute the audio or re-export the audio track and try again.',
-      };
-    },
-  });
-
-  const encoder = new AudioEncoder({
-    output: (chunk, chunkMetadata) => {
-      if (cancelled || callbackError) return;
-      if (!metadata && chunkMetadata) metadata = chunkMetadata;
-      if (chunk.timestamp >= audioEndUs) return;
-
-      const remaining = audioEndUs - chunk.timestamp;
-      if (chunk.duration !== null && chunk.duration > remaining) {
-        const data = new Uint8Array(chunk.byteLength);
-        chunk.copyTo(data);
-        chunks.push(
-          new EncodedAudioChunk({
-            type: chunk.type,
-            timestamp: chunk.timestamp,
-            duration: Math.max(1, remaining),
-            data,
-          })
-        );
-      } else {
-        chunks.push(chunk);
-      }
-    },
-    error: (error) => {
-      callbackError ??= {
-        code: 'encode-failed',
-        message: `AAC encoding failed: ${error.message}`,
-        suggestion: 'Mute the audio in Advanced settings, or use a browser that can encode AAC.',
+        suggestion:
+          'Mute the audio in Advanced settings to compress video only, or re-export the audio track and try again.',
       };
     },
   });
 
   try {
     decoder.configure(decoderConfig);
-    encoder.configure(encoderConfig);
+    if (encoder) {
+      encoder.configure({
+        codec: 'mp4a.40.2',
+        sampleRate,
+        numberOfChannels: outputChannels,
+        bitrate,
+      });
+    }
 
     const total = demux.audioSamples.length;
+    const decodeWeight = useNative ? 1 : 0.5;
     for (let index = 0; index < demux.audioSamples.length; index += 1) {
       throwIfCancelled();
       const pendingError = getCallbackError();
@@ -931,7 +1153,7 @@ async function encodeAudio(
       });
       decoder.decode(chunk);
       await waitForCapacity(decoder, encoder);
-      onProgress(Math.min(0.99, (index + 1) / total));
+      onProgress(Math.min(0.99, ((index + 1) / total) * decodeWeight));
     }
 
     try {
@@ -944,37 +1166,145 @@ async function encodeAudio(
       throw new WorkerCompressionError(
         'decode-failed',
         `Audio decoding failed: ${error instanceof Error ? error.message : 'unknown error'}`,
-        'Mute the audio or re-export the audio track and try again.'
+        'Mute the audio in Advanced settings to compress video only, or re-export the audio track and try again.'
       );
     }
     const decodeError = getCallbackError();
     if (decodeError) {
       throw new WorkerCompressionError(decodeError.code, decodeError.message, decodeError.suggestion);
     }
-    try {
-      await encoder.flush();
-    } catch (error) {
-      const pending = getCallbackError();
-      if (pending) {
-        throw new WorkerCompressionError(pending.code, pending.message, pending.suggestion);
+
+    if (useNative) {
+      if (!encoder) {
+        fail(
+          'unsupported-audio',
+          'The native AAC encoder was unavailable.',
+          'Mute the audio in Advanced settings to compress video only, or try again.'
+        );
       }
-      throw new WorkerCompressionError(
-        'encode-failed',
-        `Audio encoding failed: ${error instanceof Error ? error.message : 'unknown error'}`,
-        'Mute the audio in Advanced settings, or use a browser that can encode AAC.'
-      );
+      try {
+        await encoder.flush();
+      } catch (error) {
+        const pending = getCallbackError();
+        if (pending) {
+          throw new WorkerCompressionError(pending.code, pending.message, pending.suggestion);
+        }
+        throw new WorkerCompressionError(
+          'encode-failed',
+          `AAC encoding failed: ${error instanceof Error ? error.message : 'unknown error'}`,
+          'Mute the audio in Advanced settings to create a video-only file, or try a different browser or source file.'
+        );
+      }
+      const encodeError = getCallbackError();
+      if (encodeError) {
+        throw new WorkerCompressionError(encodeError.code, encodeError.message, encodeError.suggestion);
+      }
+      if (frames.length === 0) {
+        fail(
+          'encode-failed',
+          'The browser AAC encoder produced no audio frames.',
+          'Mute the audio in Advanced settings to create a video-only file, or try again.'
+        );
+      }
+    } else {
+      throwIfCancelled();
+      if (pcmWritten === 0) {
+        fail(
+          'unsupported-audio',
+          'The source audio decoded to no usable samples.',
+          'Mute the audio in Advanced settings to compress video only, or re-export the audio track.'
+        );
+      }
+
+      let wasm: WasmAacResult;
+      try {
+        wasm = await encodeWasmAac({
+          planar: pcmPlanes.map((plane) => plane.subarray(0, pcmWritten)),
+          sampleRate,
+          channels: outputChannels,
+          bitrateKbps: Math.max(8, Math.round(bitrate / 1000)),
+          checkCancelled: throwIfCancelled,
+          onProgress: (fraction) => onProgress(0.5 + fraction * 0.5),
+        });
+      } catch (error) {
+        if (error instanceof CancelledError || error instanceof WorkerCompressionError) throw error;
+        fail(
+          'encode-failed',
+          `The built-in AAC audio encoder failed: ${
+            error instanceof Error ? error.message : 'unknown error'
+          }`,
+          'Mute the audio in Advanced settings to create a video-only file, or try a different source file.'
+        );
+      }
+
+      let parsed: AdtsFrame[];
+      try {
+        parsed = Array.from(parseAdtsFrames(wasm.adts));
+      } catch (error) {
+        if (error instanceof CancelledError) throw error;
+        fail(
+          'encode-failed',
+          `The built-in AAC audio encoder produced invalid output: ${
+            error instanceof Error ? error.message : 'unknown error'
+          }`,
+          'Mute the audio in Advanced settings to create a video-only file, or try a different source file.'
+        );
+      }
+
+      if (parsed.length === 0) {
+        fail(
+          'encode-failed',
+          'The built-in AAC audio encoder produced no audio frames.',
+          'Mute the audio in Advanced settings to create a video-only file, or try a different source file.'
+        );
+      }
+
+      const frameLength = wasm.frameLength > 0 ? wasm.frameLength : 1024;
+      const skipCount =
+        wasm.priming > 0 ? Math.ceil(wasm.priming / frameLength) : 0;
+      if (skipCount > 0 && parsed.length <= skipCount) {
+        fail(
+          'encode-failed',
+          'The audio track is too short to encode after the encoder delay.',
+          'Mute the audio in Advanced settings to create a video-only file, or use a longer source.'
+        );
+      }
+      const usable = parsed.length <= skipCount ? parsed : parsed.slice(skipCount);
+      const trimEndUs = audioStartUs + Math.round(demux.durationSeconds * 1_000_000);
+      let timestampUs = audioStartUs;
+
+      for (const parsedFrame of usable) {
+        throwIfCancelled();
+        if (timestampUs >= trimEndUs) break;
+        const frameDurationUs =
+          (parsedFrame.durationSamples / sampleRate) * 1_000_000;
+        if (frameDurationUs <= 0) continue;
+        const durationUs = Math.min(frameDurationUs, trimEndUs - timestampUs);
+        if (durationUs <= 0) break;
+        frames.push({
+          data: parsedFrame.payload,
+          timestampUs: Math.round(timestampUs),
+          durationUs: Math.max(1, Math.round(durationUs)),
+        });
+        timestampUs += frameDurationUs;
+      }
+
+      if (frames.length === 0) {
+        fail(
+          'encode-failed',
+          'The built-in AAC audio encoder produced no usable audio frames.',
+          'Mute the audio in Advanced settings to create a video-only file, or try a different source file.'
+        );
+      }
     }
-    const encodeError = getCallbackError();
-    if (encodeError) {
-      throw new WorkerCompressionError(encodeError.code, encodeError.message, encodeError.suggestion);
-    }
+
     onProgress(1);
   } catch (error) {
     if (error instanceof WorkerCompressionError || error instanceof CancelledError) throw error;
     throw new WorkerCompressionError(
       'encode-failed',
       `Audio encoding failed: ${error instanceof Error ? error.message : 'unknown error'}`,
-      'Mute the audio in Advanced settings, or use a browser that can encode AAC.'
+      'Mute the audio in Advanced settings to create a video-only file, or try a different browser or source file.'
     );
   } finally {
     try {
@@ -982,19 +1312,22 @@ async function encodeAudio(
     } catch {
       // already closed
     }
-    try {
-      encoder.close();
-    } catch {
-      // already closed
+    if (encoder) {
+      try {
+        encoder.close();
+      } catch {
+        // already closed
+      }
     }
   }
 
   return {
-    chunks,
-    metadata,
-    sampleRate: audio.sampleRate,
+    frames,
+    asc,
+    sampleRate,
     channels: outputChannels,
-    bitrate: audioPlan.bitrate,
+    bitrate,
+    strategy,
   };
 }
 
@@ -1007,6 +1340,11 @@ async function encodeAttempt(
   onProgress: (fraction: number, processedFrames: number, totalFrames: number) => void
 ): Promise<AttemptOutput> {
   throwIfCancelled();
+
+  if (plan.width % 2 !== 0 || plan.height % 2 !== 0) {
+    plan.width = Math.max(2, Math.floor(plan.width / 2) * 2);
+    plan.height = Math.max(2, Math.floor(plan.height / 2) * 2);
+  }
 
   const target = new ArrayBufferTarget();
   let muxer: Muxer<ArrayBufferTarget>;
@@ -1064,15 +1402,15 @@ async function encodeAttempt(
   const shouldDropFrames = plan.fps < demux.sourceFps - 0.01;
   const scale = demux.video.displayHeight > 0 ? plan.height / demux.video.displayHeight : 1;
 
+  // Buffer encoded chunks until flush so the synthetic decode timeline can be
+  // anchored below every presentation timestamp (mp4-muxer v5 uses unsigned ctts).
+  const encodedChunks: { chunk: EncodedVideoChunk; metadata?: EncodedVideoChunkMetadata }[] = [];
+
   const encoder = new VideoEncoder({
     output: (chunk, metadata) => {
       if (cancelled || callbackError) return;
       try {
-        if (metadata) {
-          muxer.addVideoChunk(chunk, metadata);
-        } else {
-          muxer.addVideoChunk(chunk);
-        }
+        encodedChunks.push(metadata ? { chunk, metadata } : { chunk });
       } catch (error) {
         muxError = error instanceof Error ? error : new Error(String(error));
       }
@@ -1164,6 +1502,7 @@ async function encodeAttempt(
       bitrate: plan.videoBitrate,
       framerate: plan.fps,
       bitrateMode: 'variable',
+      avc: { format: 'avc' },
     });
 
     for (const sample of demux.videoSamples) {
@@ -1225,19 +1564,53 @@ async function encodeAttempt(
       throw new WorkerCompressionError('mux-failed', `MP4 muxing failed: ${muxFailure.message}`);
     }
 
-    onProgress(1, processedFrames, totalFrames);
+    const periodUs = plan.fps > 0 ? 1_000_000 / plan.fps : 1_000_000 / 30;
 
     try {
       if (audio) {
-        for (const chunk of audio.chunks) {
+        let first = true;
+        for (const frame of audio.frames) {
           throwIfCancelled();
-          if (audio.metadata) {
-            muxer.addAudioChunk(chunk, audio.metadata);
-          } else {
-            muxer.addAudioChunk(chunk);
-          }
+          muxer.addAudioChunkRaw(
+            frame.data,
+            'key',
+            frame.timestampUs,
+            frame.durationUs,
+            first
+              ? {
+                  decoderConfig: {
+                    codec: 'mp4a.40.2',
+                    description: audio.asc,
+                    sampleRate: audio.sampleRate,
+                    numberOfChannels: audio.channels,
+                  },
+                }
+              : undefined
+          );
+          first = false;
         }
       }
+
+      let baseDtsUs = 0;
+      for (let index = 0; index < encodedChunks.length; index += 1) {
+        const entry = encodedChunks[index];
+        if (!entry) continue;
+        baseDtsUs = Math.min(
+          baseDtsUs,
+          Math.round(entry.chunk.timestamp - index * periodUs)
+        );
+      }
+      for (let index = 0; index < encodedChunks.length; index += 1) {
+        if (index % 64 === 0) throwIfCancelled();
+        const entry = encodedChunks[index];
+        if (!entry) continue;
+        const { chunk, metadata } = entry;
+        const dtsUs = Math.round(baseDtsUs + index * periodUs);
+        const compositionOffsetUs = Math.max(0, Math.round(chunk.timestamp - dtsUs));
+        muxer.addVideoChunk(chunk, metadata ?? undefined, undefined, compositionOffsetUs);
+      }
+
+      onProgress(1, processedFrames, totalFrames);
 
       muxer.finalize();
     } catch (error) {
@@ -1393,6 +1766,7 @@ async function compressVideo(
       audioCodec: demux.metadata.audioCodec,
       audioBitrate: null,
       audioChannels: demux.metadata.audioChannels ?? 0,
+      audioEncoder: null,
       passes: 0,
       elapsedMs: performance.now() - startedAt,
       hitTarget: classification.hitTarget,
@@ -1458,7 +1832,7 @@ async function compressVideo(
     fail(
       'unsupported-codec',
       'This browser does not support video decoding.',
-      'Use a recent version of Chrome or Edge.'
+      'Use a recent Chrome, Edge, Firefox, or Safari, or try a smaller resolution.'
     );
   }
 
@@ -1695,6 +2069,7 @@ async function compressVideo(
     audioCodec: audio ? 'aac' : null,
     audioBitrate: audio ? audio.bitrate : null,
     audioChannels: audio ? audio.channels : 0,
+    audioEncoder: audio ? audio.strategy : null,
     passes: completedPasses,
     elapsedMs: performance.now() - startedAt,
     hitTarget: classification.hitTarget,

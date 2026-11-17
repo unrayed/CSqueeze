@@ -76,6 +76,13 @@ export function ResultPanel({
             (report.audioBitrate ?? 0)
         )
       : 0;
+  const audioEncoderLabel = report.skipped
+    ? ''
+    : report.audioEncoder === 'fdk-wasm'
+      ? ' · WASM'
+      : report.audioEncoder === 'webcodecs'
+        ? ' · Native'
+        : '';
   const audioLabel = report.skipped
     ? report.audioCodec !== null
       ? report.audioChannels > 0
@@ -83,7 +90,7 @@ export function ResultPanel({
         : 'Original'
       : 'No audio'
     : report.audioCodec !== null && report.audioBitrate !== null
-      ? `${Math.round(report.audioBitrate / 1000)} kbps · ${report.audioChannels} ch`
+      ? `${Math.round(report.audioBitrate / 1000)} kbps · ${report.audioChannels} ch${audioEncoderLabel}`
       : hasAudio
         ? 'Muted'
         : 'No audio';

@@ -6,22 +6,23 @@ This document describes the current limitations of CSqueeze and practical workar
 
 ### WebCodecs requirement
 
-CSqueeze requires WebCodecs and a secure context (HTTPS or localhost).
+CSqueeze requires WebCodecs and a secure context (HTTPS or localhost). These are supported requirements, not a tested device matrix.
 
 | Browser | Support | Notes |
 | --- | --- | --- |
-| Chrome (desktop) | Supported | Recommended |
-| Edge (desktop) | Supported | Recommended |
-| Brave | Supported | Works well |
-| Opera | Supported | Works well |
-| Chromium | Supported | Works well |
-| Firefox | Not supported | No WebCodecs audio/video encoding |
-| Safari | Not supported | No WebCodecs audio/video encoding |
+| Chrome (desktop) | Supported | Recent release with WebCodecs on Windows, macOS, or Linux |
+| Edge (desktop) | Supported | Recent release with WebCodecs on Windows, macOS, or Linux |
+| Brave / Opera / Chromium | Supported | Follow the Chrome requirements |
+| Firefox (desktop) | Supported | 130+; Linux needs a distribution FFmpeg with an H.264 encoder (`libx264`) in the common case |
+| Firefox (Android) | Not supported | No WebCodecs `VideoEncoder` |
+| Safari 16.4–18.x (macOS/iOS) | Video only | H.264 video encoding; no WebCodecs `AudioDecoder`, so audio must be muted |
+| Safari 26+ (macOS/iOS) | Supported | H.264 video and AAC audio |
 
 ### Mobile browsers
 
 - Chrome for Android may work but is slower and memory-constrained.
-- Safari on iOS is not supported.
+- Safari on iOS 16.4+ can encode H.264 video; iOS Safari 16.4–18.x has no WebCodecs audio APIs, so mute audio. Safari 26+ supports audio.
+- Firefox for Android is not supported.
 - Large videos may fail on mobile regardless of browser.
 
 ---
@@ -55,18 +56,23 @@ Workarounds:
 
 ## Audio Handling
 
-Audio is always re-encoded to AAC through WebCodecs `AudioDecoder` + `AudioEncoder`.
+When an audio track is kept, it is always re-encoded to AAC. The source track is decoded with WebCodecs `AudioDecoder`, then encoded with either the browser's native AAC encoder or the bundled FDK-AAC WebAssembly encoder.
+
+AAC encoding uses the browser's native encoder when it is exposed (Safari 26+, some Chrome/Edge builds). Otherwise CSqueeze encodes with the bundled Fraunhofer FDK-AAC WebAssembly encoder: Linux Chromium/Chrome builds without native AAC and all Firefox.
 
 | Situation | Result |
 | --- | --- |
-| Browser can decode source audio and encode AAC | AAC track at the selected or derived bitrate |
+| Browser can decode source audio | AAC track at the selected or derived bitrate, encoded natively or with FDK-AAC WebAssembly |
 | Source audio codec cannot be decoded | `unsupported-audio` error |
-| Browser cannot encode AAC | `unsupported-audio` error |
+| Native and WebAssembly AAC encoding both fail | `unsupported-audio` error |
+| Safari 16.4–18.x | No WebCodecs audio decode; mute audio or update to Safari 26+ |
 | Mute audio enabled | MP4 with no audio track |
 
-### Chrome on Linux
+### AAC WebAssembly fallback
 
-Chrome on Linux exposes only Opus encoding through WebCodecs, not AAC. With the fixed MP4/AAC output contract, any file with audio on Linux Chrome stops with an `Unsupported audio` error. Enable **Mute audio** in Advanced settings to compress the video track only.
+The fallback is audio-only; it is not a full-media ffmpeg.wasm replacement. It adds CPU time proportional to audio duration, so long files with audio are slower on browsers without native AAC. The bundled code is licensed MIT AND FDK-AAC; the FDK license requires its notice and grants no patent license.
+
+Muting remains useful for unusual source audio or tight targets. It is not required on Linux or Firefox to keep audio.
 
 ### Multi-track audio
 
@@ -91,16 +97,16 @@ Unsupported containers are rejected before compression with an `Unsupported cont
 
 ### Input codecs
 
-Input video must be decodable by the browser's `VideoDecoder`. In practice:
+Input video must be decodable by the browser's `VideoDecoder`. The worker extracts the `avcC` or `hvcC` codec description where present and always outputs H.264. In practice:
 
 | Codec | Support |
 | --- | --- |
 | H.264 (AVC) | Reliable |
-| HEVC (H.265) | Depends on platform/GPU support |
-| AV1 | Depends on platform support |
-| VP9 | Depends on platform support |
+| HEVC (H.265) | Depends on browser/platform decoder support |
+| AV1 | Depends on browser/platform decoder support; uncommon in MP4 |
+| VP9 | Depends on browser/platform decoder support; uncommon in MP4 |
 
-Audio must be decodable by `AudioDecoder` (AAC and MP3 are common; Opus in MP4 is uncommon).
+Audio must be decodable by `AudioDecoder` (AAC and MP3 are common; Opus in MP4 is uncommon). Safari 16.4–18.x has no `AudioDecoder`, so audio tracks cannot be decoded there.
 
 ### Output
 
@@ -158,6 +164,7 @@ A target smaller than the minimum video bitrate plus audio can be impossible; th
 3. Frame rate
 4. Device CPU/GPU
 5. Preset (Fast 2 passes, Balanced 4, Best 6)
+6. AAC encoder path (native or FDK-AAC WebAssembly)
 
 ### Typical times
 
@@ -170,7 +177,7 @@ On a modern laptop:
 | 3 min 1080p | 2–4 min | 5–10 min |
 | 5 min 1080p | 4–8 min | 10–20 min |
 
-Older devices and mobile may be several times slower.
+Older devices and mobile may be several times slower. The FDK-AAC WebAssembly fallback adds CPU time proportional to audio duration; browsers with native AAC are faster on long audio.
 
 ---
 
@@ -202,5 +209,5 @@ No upload capability exists by design.
 
 1. Check the browser console (F12)
 2. Reproduce with a different video
-3. Try Chrome or Edge
+3. Try a different supported browser
 4. Report with browser version, OS, video details (container, codec, resolution, duration), error code, and steps
